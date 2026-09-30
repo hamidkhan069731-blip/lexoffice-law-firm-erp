@@ -1,0 +1,2255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LexOffice — Law Firm Management System</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --navy:#0f1f3d; --navy-2:#152a52; --gold:#c8a24d; --gold-2:#dab968;
+  --bg:#f4f6fb; --card:#ffffff; --border:#e3e7f0; --text:#1c2438; --text-2:#5b6478;
+  --green:#1f9d55; --red:#d8453a; --amber:#e0982c; --blue:#2563a8;
+  --radius:10px; --shadow:0 1px 3px rgba(15,31,61,.08), 0 1px 2px rgba(15,31,61,.06);
+  --shadow-lg:0 10px 30px rgba(15,31,61,.14);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); font-size:14px; line-height:1.45;}
+body.dark{ --bg:#0d1424; --card:#141c30; --border:#26314a; --text:#e7ebf5; --text-2:#96a1bc; }
+a{color:inherit; text-decoration:none;}
+button{font-family:inherit; cursor:pointer;}
+input,select,textarea{font-family:inherit; font-size:14px;}
+::-webkit-scrollbar{width:9px;height:9px;}
+::-webkit-scrollbar-thumb{background:#c3cadb;border-radius:6px;}
+body.dark ::-webkit-scrollbar-thumb{background:#2c3856;}
+
+/* ---------- Login ---------- */
+#loginScreen{position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg,var(--navy) 0%,#1a3566 55%,#0a1730 100%); z-index:500;}
+#loginScreen::before{content:''; position:absolute; inset:0; opacity:.06;
+  background-image:radial-gradient(circle at 20% 30%,#fff 0,transparent 40%),radial-gradient(circle at 80% 70%,#fff 0,transparent 40%);}
+.login-card{position:relative; width:380px; background:var(--card); border-radius:16px; padding:38px 34px 30px; box-shadow:var(--shadow-lg);}
+.login-brand{display:flex; flex-direction:column; align-items:center; gap:6px; margin-bottom:26px;}
+.login-brand .mark{width:52px; height:52px; border-radius:12px; background:linear-gradient(135deg,var(--gold),var(--gold-2)); display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700; color:var(--navy); box-shadow:0 6px 16px rgba(200,162,77,.4);}
+.login-brand h1{font-size:19px; font-weight:700; color:var(--navy); letter-spacing:.3px;}
+.login-brand span{font-size:12px; color:var(--text-2); letter-spacing:1.5px; text-transform:uppercase;}
+.field{margin-bottom:16px;}
+.field label{display:block; font-size:12.5px; font-weight:600; color:var(--text-2); margin-bottom:6px;}
+.field input,.field select,.field textarea{width:100%; padding:10px 12px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); transition:.15s;}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none; border-color:var(--gold); background:var(--card);}
+.row-check{display:flex; align-items:center; gap:8px; margin-bottom:18px; font-size:13px; color:var(--text-2);}
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:10px 16px; border-radius:8px; border:none; font-weight:600; font-size:13.5px; transition:.15s;}
+.btn-primary{background:var(--navy); color:#fff; width:100%; padding:11px;}
+.btn-primary:hover{background:var(--navy-2);}
+.btn-gold{background:var(--gold); color:var(--navy);}
+.btn-gold:hover{background:var(--gold-2);}
+.btn-outline{background:transparent; border:1.5px solid var(--border); color:var(--text);}
+.btn-outline:hover{border-color:var(--navy);}
+.btn-danger{background:#fdecea; color:var(--red);}
+.btn-danger:hover{background:#fbdad7;}
+.btn-sm{padding:6px 10px; font-size:12.5px;}
+.btn-icon{padding:7px 9px;}
+.login-error{background:#fdecea; color:var(--red); border-radius:8px; padding:9px 12px; font-size:12.5px; margin-bottom:14px; display:none;}
+.login-demo{margin-top:18px; font-size:11.5px; color:var(--text-2); text-align:center; line-height:1.7;}
+.login-demo b{color:var(--text);}
+
+/* ---------- Shell ---------- */
+#app{display:none;}
+#app.active{display:flex; min-height:100vh;}
+#sidebar{width:238px; background:var(--navy); color:#dbe2f2; flex-shrink:0; display:flex; flex-direction:column; position:sticky; top:0; height:100vh; overflow-y:auto;}
+.side-brand{display:flex; align-items:center; gap:10px; padding:18px 18px 16px; border-bottom:1px solid rgba(255,255,255,.08);}
+.side-brand .mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--gold),var(--gold-2));display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--navy);font-size:16px;flex-shrink:0;}
+.side-brand div b{display:block; font-size:14.5px; color:#fff;}
+.side-brand div span{font-size:10.5px; letter-spacing:1px; color:#8fa0c9; text-transform:uppercase;}
+.nav-group{padding:10px 10px 4px;}
+.nav-label{font-size:10.5px; text-transform:uppercase; letter-spacing:1px; color:#5f75a8; padding:12px 10px 5px;}
+.nav-item{display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; font-size:13.3px; color:#c3cde5; margin-bottom:1px; cursor:pointer; position:relative;}
+.nav-item:hover{background:rgba(255,255,255,.06); color:#fff;}
+.nav-item.active{background:rgba(200,162,77,.16); color:var(--gold-2); font-weight:600;}
+.nav-item .ic{width:18px; text-align:center; font-size:15px;}
+.nav-badge{margin-left:auto; background:var(--red); color:#fff; font-size:10px; font-weight:700; padding:1px 6px; border-radius:20px;}
+#sidebar-foot{margin-top:auto; padding:14px; border-top:1px solid rgba(255,255,255,.08); font-size:11px; color:#5f75a8;}
+
+#main{flex:1; min-width:0; display:flex; flex-direction:column;}
+#topbar{height:60px; background:var(--card); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 22px; gap:16px; position:sticky; top:0; z-index:30;}
+#globalSearch{flex:1; max-width:420px; position:relative;}
+#globalSearch input{width:100%; padding:9px 14px 9px 34px; border-radius:8px; border:1.5px solid var(--border); background:var(--bg);}
+#globalSearch .ic{position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--text-2); font-size:14px;}
+#searchResults{position:absolute; top:calc(100% + 6px); left:0; right:0; background:var(--card); border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow-lg); max-height:400px; overflow-y:auto; display:none; z-index:60;}
+.sr-group{padding:6px 12px; font-size:10.5px; text-transform:uppercase; color:var(--text-2); letter-spacing:1px; background:var(--bg);}
+.sr-item{padding:9px 14px; font-size:13px; border-bottom:1px solid var(--border); cursor:pointer;}
+.sr-item:hover{background:var(--bg);}
+.sr-item small{display:block; color:var(--text-2); font-size:11.5px; margin-top:1px;}
+.topbar-spacer{flex:1;}
+.tb-btn{position:relative; width:38px; height:38px; border-radius:9px; border:1px solid var(--border); background:var(--card); display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--text-2);}
+.tb-btn:hover{background:var(--bg);}
+.tb-dot{position:absolute; top:5px; right:5px; width:8px; height:8px; border-radius:50%; background:var(--red); border:2px solid var(--card);}
+.tb-user{display:flex; align-items:center; gap:9px; padding:5px 6px 5px 5px; border-radius:9px; cursor:pointer;}
+.tb-user:hover{background:var(--bg);}
+.tb-avatar{width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,var(--navy),var(--navy-2)); color:var(--gold-2); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px;}
+.tb-user b{font-size:12.8px; display:block;}
+.tb-user span{font-size:11px; color:var(--text-2);}
+
+#content{padding:22px 26px 60px; flex:1;}
+.view{display:none;}
+.view.active{display:block; animation:fadein .18s ease;}
+@keyframes fadein{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+.page-head{display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:10px;}
+.page-head h2{font-size:21px; font-weight:700; color:var(--text);}
+.page-head p{font-size:12.8px; color:var(--text-2); margin-top:2px;}
+.page-actions{display:flex; gap:8px; flex-wrap:wrap;}
+
+.kpi-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-bottom:20px;}
+.kpi-card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; box-shadow:var(--shadow); position:relative; overflow:hidden;}
+.kpi-card .kpi-top{display:flex; align-items:center; justify-content:space-between;}
+.kpi-card .kpi-ic{width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:16px;}
+.kpi-val{font-size:25px; font-weight:800; margin-top:10px;}
+.kpi-lbl{font-size:12px; color:var(--text-2); margin-top:2px;}
+.kpi-sub{font-size:11px; margin-top:8px; display:flex; gap:10px; color:var(--text-2);}
+
+.card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:18px;}
+.card-head{display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--border);}
+.card-head h3{font-size:14.5px; font-weight:700;}
+.card-head span.link{font-size:12px; color:var(--blue); font-weight:600; cursor:pointer;}
+.card-body{padding:16px 18px;}
+
+.grid-2{display:grid; grid-template-columns:1.5fr 1fr; gap:16px;}
+.grid-charts{display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:16px;}
+.chart-wrap{height:230px; position:relative;}
+
+table{width:100%; border-collapse:collapse; font-size:13px;}
+thead th{text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-2); padding:9px 12px; border-bottom:2px solid var(--border); background:var(--bg); white-space:nowrap;}
+tbody td{padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:middle;}
+tbody tr:hover{background:var(--bg);}
+tbody tr{cursor:default;}
+.rowlink{cursor:pointer; color:var(--blue); font-weight:600;}
+.rowlink:hover{text-decoration:underline;}
+
+.badge{display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; white-space:nowrap;}
+.b-green{background:#e6f7ec; color:var(--green);} .b-red{background:#fdecea; color:var(--red);}
+.b-amber{background:#fdf2e3; color:var(--amber);} .b-blue{background:#e8f0fb; color:var(--blue);}
+.b-gray{background:#eef0f5; color:var(--text-2);} .b-navy{background:#e7ecf7; color:var(--navy);}
+body.dark .b-green{background:#12351f;} body.dark .b-red{background:#3a1613;} body.dark .b-amber{background:#3a2b12;}
+body.dark .b-blue{background:#122a44;} body.dark .b-gray{background:#1c2740;} body.dark .b-navy{background:#182448;}
+
+.toolbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:14px;}
+.toolbar input[type=text],.toolbar input[type=search]{padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; background:var(--card); min-width:210px;}
+.toolbar select{padding:8px 10px; border:1.5px solid var(--border); border-radius:8px; background:var(--card);}
+.toolbar .spacer{flex:1;}
+
+.empty-state{text-align:center; padding:52px 20px; color:var(--text-2);}
+.empty-state .ic{font-size:38px; margin-bottom:12px; opacity:.5;}
+.empty-state h4{font-size:15px; color:var(--text); margin-bottom:6px;}
+.empty-state p{font-size:12.8px; margin-bottom:16px;}
+
+.tabs{display:flex; gap:2px; border-bottom:2px solid var(--border); margin-bottom:16px; overflow-x:auto;}
+.tab-btn{padding:10px 16px; font-size:13px; font-weight:600; color:var(--text-2); border-bottom:2px solid transparent; margin-bottom:-2px; white-space:nowrap;}
+.tab-btn.active{color:var(--navy); border-color:var(--gold);}
+body.dark .tab-btn.active{color:var(--gold-2);}
+.tab-pane{display:none;} .tab-pane.active{display:block;}
+
+.modal-overlay{position:fixed; inset:0; background:rgba(10,18,38,.55); display:none; align-items:flex-start; justify-content:center; z-index:400; padding:40px 16px; overflow-y:auto;}
+.modal-overlay.active{display:flex;}
+.modal{background:var(--card); border-radius:14px; width:560px; max-width:100%; box-shadow:var(--shadow-lg); animation:fadein .15s ease;}
+.modal.wide{width:760px;}
+.modal-head{display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--border);}
+.modal-head h3{font-size:15.5px; font-weight:700;}
+.modal-close{width:30px; height:30px; border-radius:8px; border:none; background:var(--bg); color:var(--text-2); font-size:15px;}
+.modal-body{padding:18px 20px; max-height:70vh; overflow-y:auto;}
+.modal-foot{padding:14px 20px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:8px;}
+.form-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+.form-grid .full{grid-column:1/-1;}
+
+.toast-stack{position:fixed; bottom:20px; right:20px; display:flex; flex-direction:column; gap:8px; z-index:600;}
+.toast{background:var(--navy); color:#fff; padding:12px 18px; border-radius:9px; font-size:13px; box-shadow:var(--shadow-lg); display:flex; align-items:center; gap:10px; min-width:230px; animation:fadein .2s ease;}
+.toast.success{background:#166a3c;} .toast.error{background:#8f2b23;} .toast.info{background:var(--navy-2);}
+
+.confirm-box{width:400px;}
+.confirm-box .modal-body{text-align:center; padding:26px 24px 6px;}
+.confirm-box .cic{font-size:34px; margin-bottom:10px;}
+.confirm-box p{color:var(--text-2); font-size:13px; margin-top:6px;}
+
+.detail-hero{display:flex; align-items:center; gap:16px; margin-bottom:18px;}
+.detail-avatar{width:56px; height:56px; border-radius:14px; background:linear-gradient(135deg,var(--navy),var(--navy-2)); color:var(--gold-2); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:20px; flex-shrink:0;}
+.detail-hero h2{font-size:19px;} .detail-hero p{font-size:12.5px; color:var(--text-2); margin-top:2px;}
+.stat-strip{display:flex; gap:22px; margin-top:8px; flex-wrap:wrap;}
+.stat-strip div b{display:block; font-size:16px;} .stat-strip div span{font-size:11px; color:var(--text-2);}
+
+.timeline{position:relative; padding-left:26px;}
+.timeline::before{content:''; position:absolute; left:6px; top:4px; bottom:4px; width:2px; background:var(--border);}
+.tl-item{position:relative; padding-bottom:20px;}
+.tl-item::before{content:''; position:absolute; left:-26px; top:3px; width:11px; height:11px; border-radius:50%; background:var(--gold); border:2px solid var(--card); box-shadow:0 0 0 2px var(--gold);}
+.tl-date{font-size:11px; color:var(--text-2); font-weight:600;} .tl-title{font-size:13.5px; font-weight:600; margin-top:2px;} .tl-desc{font-size:12.3px; color:var(--text-2); margin-top:2px;}
+
+.ledger-total{display:flex; gap:26px; margin-bottom:14px;}
+.ledger-total div{background:var(--bg); border-radius:9px; padding:12px 16px; flex:1;}
+.ledger-total div b{display:block; font-size:18px;} .ledger-total div span{font-size:11px; color:var(--text-2);}
+
+.cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
+.cal-dow{font-size:10.5px; text-transform:uppercase; color:var(--text-2); text-align:center; padding:4px 0; font-weight:700;}
+.cal-cell{min-height:88px; border:1px solid var(--border); border-radius:8px; padding:6px; background:var(--card); font-size:11px;}
+.cal-cell.otherm{opacity:.4;}
+.cal-cell.today{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset;}
+.cal-daynum{font-weight:700; font-size:12px; margin-bottom:4px;}
+.cal-ev{background:#e8f0fb; color:var(--blue); border-radius:5px; padding:2px 5px; margin-bottom:3px; font-size:10px; cursor:pointer; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.cal-ev.urgent{background:#fdecea; color:var(--red);} .cal-ev.done{background:#e6f7ec; color:var(--green);}
+.cal-nav{display:flex; align-items:center; gap:10px; margin-bottom:14px;}
+.cal-nav b{font-size:15px; min-width:150px; text-align:center;}
+
+.qa-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin-bottom:20px;}
+.qa-btn{background:var(--card); border:1px solid var(--border); border-radius:11px; padding:16px 10px; text-align:center; box-shadow:var(--shadow);}
+.qa-btn:hover{border-color:var(--gold); transform:translateY(-1px);}
+.qa-btn .ic{font-size:20px; margin-bottom:6px;}
+.qa-btn span{font-size:12px; font-weight:600; display:block;}
+
+.print-only{display:none;}
+@media print{
+  #sidebar,#topbar,.page-actions,.toolbar,.tabs,.no-print,.modal-overlay,.toast-stack{display:none !important;}
+  #content{padding:0;} body{background:#fff;}
+  .print-only{display:block;}
+  .card{box-shadow:none; border:1px solid #ccc;}
+}
+@media (max-width:980px){
+  #sidebar{position:fixed; left:-240px; z-index:100; transition:.2s;} #sidebar.open{left:0;}
+  .form-grid{grid-template-columns:1fr;} .grid-2{grid-template-columns:1fr;}
+}
+.settings-tabs{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;}
+.settings-tab{padding:9px 15px; border-radius:8px; background:var(--card); border:1px solid var(--border); font-size:13px; font-weight:600; color:var(--text-2);}
+.settings-tab.active{background:var(--navy); color:#fff; border-color:var(--navy);}
+.perm-table td,.perm-table th{text-align:center;}
+.perm-table td:first-child,.perm-table th:first-child{text-align:left;}
+.switch{position:relative; width:38px; height:21px; display:inline-block;}
+.switch input{opacity:0; width:0; height:0;}
+.slider{position:absolute; cursor:pointer; inset:0; background:#d3d8e4; border-radius:20px; transition:.2s;}
+.slider::before{content:''; position:absolute; height:16px; width:16px; left:2.5px; top:2.5px; background:#fff; border-radius:50%; transition:.2s;}
+input:checked + .slider{background:var(--green);}
+input:checked + .slider::before{transform:translateX(17px);}
+.notif-item{display:flex; gap:12px; padding:12px 14px; border-bottom:1px solid var(--border);}
+.notif-ic{width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0;}
+.notif-item b{font-size:13px;} .notif-item p{font-size:12px; color:var(--text-2); margin-top:2px;}
+.notif-item small{font-size:10.5px; color:var(--text-2);}
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="mark">L</div>
+      <h1>LexOffice</h1>
+      <span>Law Firm Management System</span>
+    </div>
+    <div class="login-error" id="loginError"></div>
+    <div class="field">
+      <label>Username or Email</label>
+      <input type="text" id="loginUser" placeholder="e.g. admin" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div class="row-check">
+      <input type="checkbox" id="rememberMe"> <label for="rememberMe">Keep me signed in on this device</label>
+    </div>
+    <button class="btn btn-primary" id="loginBtn">Sign In</button>
+    <div class="login-demo">
+      Demo accounts (password: <b>demo123</b>)<br>
+      <b>admin</b> · <b>lawyer</b> · <b>assistant</b> · <b>accountant</b>
+    </div>
+  </div>
+</div>
+
+<!-- ================= APP SHELL ================= -->
+<div id="app">
+  <aside id="sidebar">
+    <div class="side-brand">
+      <div class="mark">L</div>
+      <div><b>LexOffice</b><span>Practice Manager</span></div>
+    </div>
+    <nav id="sideNav"></nav>
+    <div id="sidebar-foot">LexOffice v1.0 — Offline Edition<br>© 2026 Your Firm</div>
+  </aside>
+
+  <div id="main">
+    <div id="topbar">
+      <button class="tb-btn no-print" id="hamburgerBtn" style="display:none;">☰</button>
+      <div id="globalSearch">
+        <span class="ic">🔎</span>
+        <input type="text" id="searchInput" placeholder="Search clients, cases, CNIC, phone, court...">
+        <div id="searchResults"></div>
+      </div>
+      <div class="topbar-spacer"></div>
+      <button class="tb-btn" id="themeToggle" title="Toggle dark mode">🌙</button>
+      <button class="tb-btn" id="notifBtn" title="Notifications">🔔<span class="tb-dot" id="notifDot" style="display:none;"></span></button>
+      <div class="tb-user" id="userMenuBtn">
+        <div class="tb-avatar" id="tbAvatar">A</div>
+        <div><b id="tbName">—</b><span id="tbRole">—</span></div>
+      </div>
+    </div>
+
+    <div id="content">
+
+      <!-- DASHBOARD -->
+      <section class="view" id="view-dashboard" data-perm="dashboard">
+        <div class="page-head">
+          <div><h2>Dashboard</h2><p id="dashDateLine">—</p></div>
+          <div class="page-actions"><button class="btn btn-outline btn-sm" id="dashPrintBtn">🖨 Print Summary</button></div>
+        </div>
+        <div class="qa-grid" id="quickActions"></div>
+        <div class="kpi-grid" id="kpiCases"></div>
+        <div class="kpi-grid" id="kpiOther"></div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head"><h3>Today's Hearings</h3><span class="link" data-nav="hearings">View all →</span></div>
+            <div class="card-body" id="todayHearingsBox"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Tasks &amp; Important Dates</h3><span class="link" data-nav="tasks">View all →</span></div>
+            <div class="card-body" id="taskDatesBox"></div>
+          </div>
+        </div>
+        <div class="grid-charts">
+          <div class="card"><div class="card-head"><h3>Cases by Status</h3></div><div class="card-body chart-wrap"><canvas id="chartCasesStatus"></canvas></div></div>
+          <div class="card"><div class="card-head"><h3>Cases by Court</h3></div><div class="card-body chart-wrap"><canvas id="chartCasesCourt"></canvas></div></div>
+          <div class="card"><div class="card-head"><h3>Cases by Type</h3></div><div class="card-body chart-wrap"><canvas id="chartCasesType"></canvas></div></div>
+          <div class="card"><div class="card-head"><h3>Monthly Fees Received (Rs.)</h3></div><div class="card-body chart-wrap"><canvas id="chartFees"></canvas></div></div>
+          <div class="card"><div class="card-head"><h3>Monthly Expenses (Rs.)</h3></div><div class="card-body chart-wrap"><canvas id="chartExpenses"></canvas></div></div>
+          <div class="card"><div class="card-head"><h3>Upcoming Hearings (14 days)</h3></div><div class="card-body chart-wrap"><canvas id="chartUpcoming"></canvas></div></div>
+        </div>
+      </section>
+
+      <!-- GENERIC LIST VIEWS (clients, courts, hearings, tasks, importantDates, fees, payments, expenses) mount here -->
+      <section class="view" id="view-clients" data-perm="clients"></section>
+      <section class="view" id="view-clientDetail" data-perm="clients"></section>
+      <section class="view" id="view-cases" data-perm="cases"></section>
+      <section class="view" id="view-caseDetail" data-perm="cases"></section>
+      <section class="view" id="view-courts" data-perm="courts"></section>
+      <section class="view" id="view-hearings" data-perm="hearings"></section>
+      <section class="view" id="view-calendar" data-perm="hearings"></section>
+      <section class="view" id="view-documents" data-perm="documents"></section>
+      <section class="view" id="view-tasks" data-perm="tasks"></section>
+      <section class="view" id="view-importantDates" data-perm="tasks"></section>
+      <section class="view" id="view-fees" data-perm="fees"></section>
+      <section class="view" id="view-payments" data-perm="fees"></section>
+      <section class="view" id="view-expenses" data-perm="expenses"></section>
+      <section class="view" id="view-finance" data-perm="finance"></section>
+      <section class="view" id="view-reports" data-perm="reports"></section>
+      <section class="view" id="view-notifications" data-perm="dashboard"></section>
+      <section class="view" id="view-settings" data-perm="settings"></section>
+      <section class="view" id="view-backup" data-perm="settings"></section>
+      <section class="view" id="view-audit" data-perm="settings"></section>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay"><div class="modal" id="modalBox"></div></div>
+<div class="modal-overlay" id="confirmOverlay">
+  <div class="modal confirm-box">
+    <div class="modal-body">
+      <div class="cic" id="confirmIcon">⚠️</div>
+      <h3 id="confirmTitle">Are you sure?</h3>
+      <p id="confirmMsg"></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline btn-sm" id="confirmCancelBtn">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="confirmOkBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+<div class="toast-stack" id="toastStack"></div>
+
+<script>
+/* =========================================================================
+   LEXOFFICE — LAW FIRM MANAGEMENT SYSTEM
+   Vanilla JS + IndexedDB, single-file offline-first application.
+   Architecture: db layer -> schema/entity configs -> generic CRUD/UI engine
+   -> module renderers -> router -> bootstrap.
+   ========================================================================= */
+
+/* ---------------------------------------------------------------------
+   1. DATABASE LAYER — now backed by the real Node/Express + SQLite API
+   instead of the browser's IndexedDB. The function names/signatures
+   (dbAll/dbGet/dbPut/dbDel/dbClearStore) are kept identical to the old
+   IndexedDB version on purpose, so every other line of the app (which
+   only ever calls these six helpers) keeps working unmodified.
+   --------------------------------------------------------------------- */
+// If you serve frontend/ from the same Express server (the default,
+// via `npm start` in /backend), leave this as ''. If you ever host the
+// front-end separately from the API, set this to e.g. 'http://localhost:4000'.
+const API_BASE = '';
+
+const STORES = ['users','clients','cases','caseParties','courts','hearings',
+  'documents','tasks','importantDates','fees','payments','expenses','notes',
+  'settings','auditLogs'];
+// primary-key field used per store (matches the backend's db.js STORE_KEYS)
+const STORE_KEYS = {users:'id',clients:'id',cases:'id',caseParties:'id',courts:'id',
+  hearings:'id',documents:'id',tasks:'id',importantDates:'id',fees:'id',payments:'id',
+  expenses:'id',notes:'id',settings:'key',auditLogs:'id'};
+
+function authToken(){ return localStorage.getItem('lexoffice_token') || sessionStorage.getItem('lexoffice_token'); }
+
+async function apiFetch(path, opts){
+  const headers = Object.assign({'Content-Type':'application/json'}, (opts&&opts.headers)||{});
+  const token = authToken();
+  if(token) headers['Authorization'] = 'Bearer '+token;
+  const res = await fetch(API_BASE+path, Object.assign({}, opts, {headers}));
+  if(res.status===401){ // token missing/expired -> back to login
+    localStorage.removeItem('lexoffice_token'); sessionStorage.removeItem('lexoffice_token');
+    localStorage.removeItem('lexoffice_session'); sessionStorage.removeItem('lexoffice_session');
+    location.reload();
+    throw new Error('Not authenticated');
+  }
+  if(!res.ok){
+    let msg = 'Request failed ('+res.status+')';
+    try{ const j = await res.json(); if(j && j.error) msg = j.error; }catch(e){}
+    throw new Error(msg);
+  }
+  if(res.status===204) return null;
+  return res.json();
+}
+
+// openDatabase() no longer opens IndexedDB — it just confirms the API is
+// reachable. init() still calls it so the boot sequence is unchanged.
+async function openDatabase(){
+  try{ await fetch(API_BASE+'/api/auth/login', {method:'OPTIONS'}); }catch(e){ /* server may not support OPTIONS, ignore */ }
+  return true;
+}
+function dbAll(store){ return apiFetch(`/api/${store}`); }
+function dbGet(store,id){ return apiFetch(`/api/${store}/${encodeURIComponent(id)}`).catch(()=>null); }
+function dbPut(store,obj){
+  const key = STORE_KEYS[store] || 'id';
+  const pk = obj[key];
+  return apiFetch(`/api/${store}/${encodeURIComponent(pk)}`, {method:'PUT', body: JSON.stringify(obj)});
+}
+function dbDel(store,id){ return apiFetch(`/api/${store}/${encodeURIComponent(id)}`, {method:'DELETE'}); }
+function dbClearStore(store){ return apiFetch(`/api/${store}`, {method:'DELETE'}); }
+
+function uid(prefix){ return (prefix||'ID')+'-'+Date.now().toString(36).toUpperCase()+Math.floor(Math.random()*900+100); }
+function nowIso(){ return new Date().toISOString(); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+
+/* ---------------------------------------------------------------------
+   2. AUTH / SESSION / ROLES / PERMISSIONS
+   --------------------------------------------------------------------- */
+const ROLE_PERMS = {
+  admin:      ['dashboard','clients','cases','courts','hearings','documents','tasks','fees','expenses','finance','reports','settings'],
+  lawyer:     ['dashboard','clients','cases','courts','hearings','documents','tasks','fees','reports'],
+  assistant:  ['dashboard','clients','cases','hearings','tasks','documents'],
+  accountant: ['dashboard','fees','expenses','finance','reports']
+};
+let SESSION = null; // {userId, username, fullName, role}
+
+// The backend seeds admin/lawyer/assistant/accountant (password: demo123)
+// on its very first run, so there is nothing left for the client to do here.
+// Kept as a no-op so init()'s call site doesn't need touching.
+async function ensureDefaultUsers(){ return true; }
+
+let LAST_TOKEN = null;
+async function login(username, password){
+  let res;
+  try{
+    res = await fetch(API_BASE+'/api/auth/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username, password})
+    });
+  }catch(e){ throw new Error('Cannot reach the server. Is the backend running?'); }
+  if(res.status===403) return 'disabled';
+  if(!res.ok) return null;
+  const data = await res.json();
+  LAST_TOKEN = data.token;
+  // shape kept identical to the old IndexedDB user record so setSession()/downstream code is unchanged
+  return {id:data.user.id, username:data.user.username, fullName:data.user.fullName, role:data.user.role};
+}
+function setSession(u, remember){
+  SESSION = {userId:u.id, username:u.username, fullName:u.fullName, role:u.role};
+  const store = remember ? localStorage : sessionStorage;
+  store.setItem('lexoffice_session', JSON.stringify(SESSION));
+  if(LAST_TOKEN) store.setItem('lexoffice_token', LAST_TOKEN);
+}
+function loadSession(){
+  const raw = localStorage.getItem('lexoffice_session') || sessionStorage.getItem('lexoffice_session');
+  const token = localStorage.getItem('lexoffice_token') || sessionStorage.getItem('lexoffice_token');
+  if(raw && token){ try{ SESSION = JSON.parse(raw); return true; }catch(e){ return false; } }
+  return false;
+}
+function logout(){
+  localStorage.removeItem('lexoffice_session'); sessionStorage.removeItem('lexoffice_session');
+  localStorage.removeItem('lexoffice_token'); sessionStorage.removeItem('lexoffice_token');
+  SESSION = null; location.reload();
+}
+function can(module){ if(!SESSION) return false; return (ROLE_PERMS[SESSION.role]||[]).includes(module); }
+
+async function logAudit(action, entity, detail){
+  await dbPut('auditLogs', {id:uid('LOG'), date:nowIso(), user:SESSION? SESSION.fullName:'System', action, entity, detail: detail||''});
+}
+
+/* ---------------------------------------------------------------------
+   3. UI HELPERS: toast, confirm, modal, formatting
+   --------------------------------------------------------------------- */
+function toast(msg, type){
+  const el = document.createElement('div');
+  el.className = 'toast '+(type||'info');
+  el.innerHTML = (type==='success'?'✓ ':type==='error'?'✕ ':'ℹ ')+msg;
+  document.getElementById('toastStack').appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='.3s'; setTimeout(()=>el.remove(),300); }, 3200);
+}
+function confirmDialog(title, msg, opts){
+  opts = opts || {};
+  return new Promise((resolve)=>{
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMsg').textContent = msg;
+    document.getElementById('confirmIcon').textContent = opts.icon || '⚠️';
+    const okBtn = document.getElementById('confirmOkBtn');
+    okBtn.textContent = opts.okText || 'Confirm';
+    okBtn.className = 'btn btn-sm '+(opts.okClass || 'btn-danger');
+    const ov = document.getElementById('confirmOverlay');
+    ov.classList.add('active');
+    const cleanup = (val)=>{ ov.classList.remove('active'); okBtn.onclick=null; cancelBtn.onclick=null; resolve(val); };
+    const cancelBtn = document.getElementById('confirmCancelBtn');
+    okBtn.onclick = ()=> cleanup(true);
+    cancelBtn.onclick = ()=> cleanup(false);
+  });
+}
+function openModal(html, opts){
+  const box = document.getElementById('modalBox');
+  box.className = 'modal'+(opts&&opts.wide?' wide':'');
+  box.innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('active');
+}
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('active'); }
+document.getElementById('modalOverlay').addEventListener('click', (e)=>{ if(e.target.id==='modalOverlay') closeModal(); });
+
+function fmtMoney(n){ n = Number(n)||0; return 'Rs. ' + n.toLocaleString('en-PK', {maximumFractionDigits:0}); }
+function fmtDate(d){ if(!d) return '—'; const dt = new Date(d); if(isNaN(dt)) return d; return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
+function fmtDateTime(d){ if(!d) return '—'; const dt = new Date(d); if(isNaN(dt)) return d; return dt.toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function daysBetween(a,b){ return Math.round((new Date(b)-new Date(a))/86400000); }
+function esc(s){ return (s===undefined||s===null)?'':String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function initials(name){ if(!name) return '?'; return name.trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
+
+function badgeForStatus(status){
+  const map = {
+    'Active':'b-green','Won':'b-green','Paid':'b-green','Completed':'b-green','Received':'b-green',
+    'Pending':'b-amber','Under Trial':'b-amber','Partial':'b-amber','In Progress':'b-amber','Decision Pending':'b-amber',
+    'New':'b-blue','Adjournment':'b-blue',
+    'Lost':'b-red','Overdue':'b-red','Cancelled':'b-red','Unpaid':'b-red',
+    'Closed':'b-gray','Withdrawn':'b-gray','Settled':'b-navy'
+  };
+  return map[status] || 'b-gray';
+}
+function badge(text){ return `<span class="badge ${badgeForStatus(text)}">${esc(text)}</span>`; }
+function priorityBadge(p){
+  const map={'Low':'b-gray','Normal':'b-blue','High':'b-amber','Urgent':'b-red'};
+  return `<span class="badge ${map[p]||'b-gray'}">${esc(p||'Normal')}</span>`;
+}
+function csvExport(filename, rows, headers){
+  const esc2 = v => `"${String(v===undefined||v===null?'':v).replace(/"/g,'""')}"`;
+  let out = headers.map(esc2).join(',')+'\n';
+  rows.forEach(r=> out += headers.map(h=>esc2(r[h])).join(',')+'\n');
+  const blob = new Blob([out], {type:'text/csv'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+}
+function printSection(html, title){
+  const w = window.open('', '_blank');
+  w.document.write(`<html><head><title>${esc(title||'Print')}</title><style>
+    body{font-family:Arial,sans-serif;padding:26px;color:#1c2438;}
+    h1{font-size:18px;margin-bottom:2px;} h2{font-size:14px;color:#5b6478;font-weight:500;margin-bottom:16px;}
+    table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:10px;}
+    th,td{border:1px solid #ccc;padding:6px 9px;text-align:left;} th{background:#f4f6fb;}
+    .meta{color:#5b6478;font-size:11.5px;margin-bottom:14px;}
+  </style></head><body>${html}</body></html>`);
+  w.document.close(); setTimeout(()=>w.print(), 300);
+}
+
+/* ---------------------------------------------------------------------
+   4. ENTITY SCHEMA CONFIG — drives the generic CRUD/table/form engine
+   --------------------------------------------------------------------- */
+const OPT = {
+  clientType:['Individual','Company','Organization','Other'],
+  clientStatus:['Active','Inactive'],
+  caseType:['Civil','Criminal','Family','Property','Corporate','Banking','Tax','Labour','Constitutional','Service','Rent','Other'],
+  caseStatus:['New','Active','Pending','Under Trial','Decision Pending','Won','Lost','Withdrawn','Settled','Closed'],
+  priority:['Low','Normal','High','Urgent'],
+  courtType:['High Court','District Court','Sessions Court','Civil Court','Family Court','Magistrate Court','Banking Court','Anti-Terrorism Court','Labour Court','Other'],
+  hearingType:['Arguments','Evidence','Cross Examination','Summons','Bail','Notice','Order','Judgment','Adjournment','Other'],
+  hearingStatus:['Scheduled','Completed','Adjourned','Cancelled'],
+  docCategory:['CNIC','Petition','Application','FIR','Evidence','Court Order','Judgment','Agreement','Affidavit','Notice','Other'],
+  taskStatus:['Pending','In Progress','Completed','Cancelled'],
+  dateType:['Hearing','Limitation Date','Filing Deadline','Document Deadline','Payment Due Date','Meeting','Follow-up','Other'],
+  feeType:['Consultation','Case Fee','Appearance Fee','Drafting Fee','Filing Fee','Professional Fee','Other'],
+  paymentStatus:['Unpaid','Partial','Paid'],
+  paymentMethod:['Cash','Bank','Online Transfer','Cheque','Other'],
+  expenseCategory:['Court Fee','Filing','Travel','Photocopy','Courier','Documentation','Office Expense','Staff Expense','Other'],
+};
+
+function clientLabel(c){ return c ? `${c.fullName} (${c.clientId||c.id})` : '—'; }
+function caseLabel(c){ return c ? `${c.caseNumber} — ${c.caseTitle||''}` : '—'; }
+
+const ENTITY = {
+  clients:{
+    store:'clients', label:'Client', labelPlural:'Clients', idPrefix:'CL', permission:'clients',
+    columns:[
+      {key:'fullName', label:'Name', render:r=>`<span class="rowlink" data-open="clients" data-id="${r.id}">${esc(r.fullName)}</span><br><small style="color:var(--text-2)">${esc(r.clientId||r.id)}</small>`},
+      {key:'clientType', label:'Type'},
+      {key:'phone', label:'Phone'},
+      {key:'cnic', label:'CNIC'},
+      {key:'city', label:'City'},
+      {key:'status', label:'Status', render:r=>badge(r.status)},
+    ],
+    searchFields:['fullName','cnic','phone','city','email'],
+    filterField:{key:'status', options:['Active','Inactive']},
+    fields:[
+      {key:'fullName', label:'Full Name', type:'text', required:true, col:2},
+      {key:'guardianName', label:'Father/Husband Name', type:'text'},
+      {key:'cnic', label:'CNIC', type:'text', placeholder:'XXXXX-XXXXXXX-X'},
+      {key:'phone', label:'Phone', type:'text', required:true},
+      {key:'whatsapp', label:'WhatsApp', type:'text'},
+      {key:'email', label:'Email', type:'email'},
+      {key:'clientType', label:'Client Type', type:'select', options:OPT.clientType},
+      {key:'occupation', label:'Occupation', type:'text'},
+      {key:'city', label:'City', type:'text'},
+      {key:'address', label:'Address', type:'textarea', col:2},
+      {key:'status', label:'Status', type:'select', options:OPT.clientStatus},
+      {key:'notes', label:'Notes', type:'textarea', col:2},
+    ],
+    defaults:()=>({clientType:'Individual', status:'Active', registrationDate:todayStr()}),
+  },
+  courts:{
+    store:'courts', label:'Court', labelPlural:'Courts', idPrefix:'CRT', permission:'courts',
+    columns:[
+      {key:'courtName', label:'Court Name', render:r=>`<b>${esc(r.courtName)}</b>`},
+      {key:'courtType', label:'Type'},
+      {key:'city', label:'City'},
+      {key:'district', label:'District'},
+      {key:'judge', label:'Judge'},
+      {key:'courtNumber', label:'Court No.'},
+    ],
+    searchFields:['courtName','city','judge','district'],
+    filterField:{key:'courtType', options:OPT.courtType},
+    fields:[
+      {key:'courtName', label:'Court Name', type:'text', required:true, col:2},
+      {key:'courtType', label:'Court Type', type:'select', options:OPT.courtType},
+      {key:'city', label:'City', type:'text'},
+      {key:'district', label:'District', type:'text'},
+      {key:'judge', label:'Judge', type:'text'},
+      {key:'courtNumber', label:'Court Number', type:'text'},
+      {key:'address', label:'Address', type:'textarea', col:2},
+      {key:'notes', label:'Notes', type:'textarea', col:2},
+    ],
+    defaults:()=>({}),
+  },
+  hearings:{
+    store:'hearings', label:'Hearing', labelPlural:'Hearings', idPrefix:'HRG', permission:'hearings',
+    columns:[
+      {key:'hearingDate', label:'Date', render:r=>fmtDate(r.hearingDate)},
+      {key:'hearingTime', label:'Time'},
+      {key:'caseId', label:'Case', render:r=>caseRefHtml(r.caseId)},
+      {key:'court', label:'Court'},
+      {key:'hearingType', label:'Type'},
+      {key:'status', label:'Status', render:r=>badge(r.status)},
+    ],
+    searchFields:[], filterField:{key:'status', options:OPT.hearingStatus},
+    fields:[
+      {key:'caseId', label:'Case', type:'select-case', required:true, col:2},
+      {key:'hearingDate', label:'Hearing Date', type:'date', required:true},
+      {key:'hearingTime', label:'Hearing Time', type:'time'},
+      {key:'court', label:'Court', type:'select-court'},
+      {key:'judge', label:'Judge', type:'text'},
+      {key:'hearingType', label:'Hearing Type', type:'select', options:OPT.hearingType},
+      {key:'status', label:'Status', type:'select', options:OPT.hearingStatus},
+      {key:'purpose', label:'Purpose', type:'text', col:2},
+      {key:'result', label:'Result', type:'textarea', col:2},
+      {key:'nextDate', label:'Next Hearing Date', type:'date'},
+      {key:'notes', label:'Lawyer Notes', type:'textarea', col:2},
+    ],
+    defaults:()=>({status:'Scheduled', hearingDate:todayStr()}),
+  },
+  tasks:{
+    store:'tasks', label:'Task', labelPlural:'Tasks', idPrefix:'TSK', permission:'tasks',
+    columns:[
+      {key:'title', label:'Task'},
+      {key:'caseId', label:'Case', render:r=>caseRefHtml(r.caseId)},
+      {key:'assignedTo', label:'Assigned To'},
+      {key:'dueDate', label:'Due Date', render:r=>{
+        const overdue = r.status!=='Completed' && r.status!=='Cancelled' && r.dueDate && r.dueDate<todayStr();
+        return `<span style="${overdue?'color:var(--red);font-weight:700':''}">${fmtDate(r.dueDate)}${overdue?' ⚠':''}</span>`;
+      }},
+      {key:'priority', label:'Priority', render:r=>priorityBadge(r.priority)},
+      {key:'status', label:'Status', render:r=>badge(r.status)},
+    ],
+    searchFields:['title'], filterField:{key:'status', options:OPT.taskStatus},
+    fields:[
+      {key:'title', label:'Task', type:'text', required:true, col:2},
+      {key:'caseId', label:'Related Case', type:'select-case'},
+      {key:'clientId', label:'Related Client', type:'select-client'},
+      {key:'assignedTo', label:'Assigned To', type:'select-user'},
+      {key:'dueDate', label:'Due Date', type:'date', required:true},
+      {key:'priority', label:'Priority', type:'select', options:OPT.priority},
+      {key:'status', label:'Status', type:'select', options:OPT.taskStatus},
+      {key:'notes', label:'Notes', type:'textarea', col:2},
+    ],
+    defaults:()=>({status:'Pending', priority:'Normal'}),
+  },
+  importantDates:{
+    store:'importantDates', label:'Important Date', labelPlural:'Important Dates', idPrefix:'DT', permission:'tasks',
+    columns:[
+      {key:'title', label:'Title'},
+      {key:'type', label:'Type'},
+      {key:'date', label:'Date', render:r=>fmtDate(r.date)},
+      {key:'caseId', label:'Case', render:r=>caseRefHtml(r.caseId)},
+    ],
+    searchFields:['title'], filterField:{key:'type', options:OPT.dateType},
+    fields:[
+      {key:'title', label:'Title', type:'text', required:true, col:2},
+      {key:'type', label:'Type', type:'select', options:OPT.dateType},
+      {key:'date', label:'Date', type:'date', required:true},
+      {key:'caseId', label:'Related Case', type:'select-case', col:2},
+      {key:'notes', label:'Notes', type:'textarea', col:2},
+    ],
+    defaults:()=>({type:'Other'}),
+  },
+  fees:{
+    store:'fees', label:'Fee', labelPlural:'Fees', idPrefix:'FEE', permission:'fees',
+    columns:[
+      {key:'clientId', label:'Client', render:r=>clientRefHtml(r.clientId)},
+      {key:'caseId', label:'Case', render:r=>caseRefHtml(r.caseId)},
+      {key:'feeType', label:'Type'},
+      {key:'amount', label:'Amount', render:r=>fmtMoney(r.amount)},
+      {key:'receivedAmount', label:'Received', render:r=>fmtMoney(r.receivedAmount)},
+      {key:'outstanding', label:'Outstanding', render:r=>fmtMoney((Number(r.amount)||0)-(Number(r.receivedAmount)||0))},
+      {key:'paymentStatus', label:'Status', render:r=>badge(r.paymentStatus)},
+    ],
+    searchFields:[], filterField:{key:'paymentStatus', options:OPT.paymentStatus},
+    fields:[
+      {key:'clientId', label:'Client', type:'select-client', required:true},
+      {key:'caseId', label:'Case', type:'select-case'},
+      {key:'feeType', label:'Fee Type', type:'select', options:OPT.feeType},
+      {key:'amount', label:'Amount (Rs.)', type:'number', required:true},
+      {key:'receivedAmount', label:'Received Amount (Rs.)', type:'number'},
+      {key:'dueDate', label:'Due Date', type:'date'},
+      {key:'paymentStatus', label:'Payment Status', type:'select', options:OPT.paymentStatus},
+      {key:'notes', label:'Notes', type:'textarea', col:2},
+    ],
+    defaults:()=>({paymentStatus:'Unpaid', receivedAmount:0}),
+  },
+  payments:{
+    store:'payments', label:'Payment', labelPlural:'Payments', idPrefix:'PAY', permission:'fees',
+    columns:[
+      {key:'date', label:'Date', render:r=>fmtDate(r.date)},
+      {key:'clientId', label:'Client', render:r=>clientRefHtml(r.clientId)},
+      {key:'caseId', label:'Case', render:r=>caseRefHtml(r.caseId)},
+      {key:'amount', label:'Amount', render:r=>fmtMoney(r.amount)},
+      {key:'method', label:'Method'},
+      {key:'receivedBy', label:'Received By'},
+    ],
+    searchFields:['reference'], filterField:{key:'method', options:OPT.paymentMethod},
+    fields:[
+      {key:'clientId', label:'Client', type:'select-client', required:true},
+      {key:'caseId', label:'Case', type:'select-case'},
+      {key:'date', label:'Date', type:'date', required:true},
+      {key:'amount', label:'Amount (Rs.)', type:'number', required:true},
+      {key:'method', label:'Payment Method', type:'select', options:OPT.paymentMethod},
+      {key:'reference', label:'Reference', type:'text'},
+      {key:'receivedBy', label:'Received By', type:'select-user'},
+      {key:'notes', label:'Notes', type:'textarea', col:2},
+    ],
+    defaults:()=>({date:todayStr(), method:'Cash'}),
+    afterSave: async (rec)=>{
+      // auto-apply payment to fees for the same client (oldest outstanding first)
+      const fees = (await dbAll('fees')).filter(f=>f.clientId===rec.clientId && (f.caseId?f.caseId===rec.caseId:true) && f.paymentStatus!=='Paid');
+      let remaining = Number(rec.amount)||0;
+      for(const f of fees.sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||''))){
+        if(remaining<=0) break;
+        const outstanding = (Number(f.amount)||0)-(Number(f.receivedAmount)||0);
+        const apply = Math.min(outstanding, remaining);
+        f.receivedAmount = (Number(f.receivedAmount)||0)+apply;
+        f.paymentStatus = f.receivedAmount>=Number(f.amount) ? 'Paid' : (f.receivedAmount>0?'Partial':'Unpaid');
+        remaining -= apply;
+        await dbPut('fees', f);
+      }
+    }
+  },
+  expenses:{
+    store:'expenses', label:'Expense', labelPlural:'Expenses', idPrefix:'EXP', permission:'expenses',
+    columns:[
+      {key:'date', label:'Date', render:r=>fmtDate(r.date)},
+      {key:'category', label:'Category'},
+      {key:'amount', label:'Amount', render:r=>fmtMoney(r.amount)},
+      {key:'caseId', label:'Case', render:r=>caseRefHtml(r.caseId)},
+      {key:'clientId', label:'Client', render:r=>clientRefHtml(r.clientId)},
+      {key:'paidBy', label:'Paid By'},
+    ],
+    searchFields:['description'], filterField:{key:'category', options:OPT.expenseCategory},
+    fields:[
+      {key:'date', label:'Date', type:'date', required:true},
+      {key:'category', label:'Category', type:'select', options:OPT.expenseCategory},
+      {key:'amount', label:'Amount (Rs.)', type:'number', required:true},
+      {key:'caseId', label:'Related Case', type:'select-case'},
+      {key:'clientId', label:'Related Client', type:'select-client'},
+      {key:'paidBy', label:'Paid By', type:'select-user'},
+      {key:'description', label:'Description', type:'textarea', col:2},
+    ],
+    defaults:()=>({date:todayStr()}),
+  },
+  documents:{
+    store:'documents', label:'Document', labelPlural:'Documents', idPrefix:'DOC', permission:'documents',
+    columns:[
+      {key:'title', label:'Title'},
+      {key:'category', label:'Category'},
+      {key:'caseId', label:'Case', render:r=>caseRefHtml(r.caseId)},
+      {key:'clientId', label:'Client', render:r=>clientRefHtml(r.clientId)},
+      {key:'filePath', label:'Location', render:r=>esc(r.filePath||'—')},
+      {key:'uploadDate', label:'Added', render:r=>fmtDate(r.uploadDate)},
+    ],
+    searchFields:['title'], filterField:{key:'category', options:OPT.docCategory},
+    fields:[
+      {key:'title', label:'Document Title', type:'text', required:true, col:2},
+      {key:'category', label:'Category', type:'select', options:OPT.docCategory},
+      {key:'caseId', label:'Related Case', type:'select-case'},
+      {key:'clientId', label:'Related Client', type:'select-client'},
+      {key:'filePath', label:'File Location / Reference', type:'text', col:2, placeholder:'e.g. physical file no., folder path, or scan reference'},
+      {key:'notes', label:'Notes', type:'textarea', col:2},
+    ],
+    defaults:()=>({uploadDate:todayStr()}),
+  },
+};
+
+function clientRefHtml(id){ const c = CACHE.clients.find(x=>x.id===id); return c? `<span class="rowlink" data-open="clients" data-id="${c.id}">${esc(c.fullName)}</span>` : '—'; }
+function caseRefHtml(id){ const c = CACHE.cases.find(x=>x.id===id); return c? `<span class="rowlink" data-open="caseDetail" data-id="${c.id}">${esc(c.caseNumber)}</span>` : '—'; }
+
+/* ---------------------------------------------------------------------
+   5. IN-MEMORY CACHE (refreshed after every mutation) + generic loaders
+   --------------------------------------------------------------------- */
+const CACHE = {clients:[],cases:[],caseParties:[],courts:[],hearings:[],documents:[],tasks:[],
+  importantDates:[],fees:[],payments:[],expenses:[],notes:[],users:[],auditLogs:[]};
+
+async function refreshCache(stores){
+  const list = stores || Object.keys(CACHE);
+  for(const s of list){ CACHE[s] = await dbAll(s); }
+}
+
+function optionsForSelectEntity(kind){
+  if(kind==='select-client') return CACHE.clients.map(c=>({value:c.id,label:clientLabel(c)}));
+  if(kind==='select-case') return CACHE.cases.map(c=>({value:c.id,label:caseLabel(c)}));
+  if(kind==='select-court') return CACHE.courts.map(c=>({value:c.courtName,label:c.courtName}));
+  if(kind==='select-user') return CACHE.users.map(u=>({value:u.fullName,label:u.fullName}));
+  return [];
+}
+
+/* ---------------------------------------------------------------------
+   6. GENERIC FORM RENDERER (used by every entity + case/client sub-forms)
+   --------------------------------------------------------------------- */
+function renderFieldHtml(f, val){
+  val = val===undefined||val===null? '' : val;
+  const req = f.required? 'required' : '';
+  const colClass = f.col===2? 'full' : '';
+  let input = '';
+  if(f.type==='text' || f.type==='email' || f.type==='time'){
+    input = `<input type="${f.type==='time'?'time':(f.type==='email'?'email':'text')}" id="fld_${f.key}" ${req} placeholder="${esc(f.placeholder||'')}" value="${esc(val)}">`;
+  } else if(f.type==='number'){
+    input = `<input type="number" step="0.01" min="0" id="fld_${f.key}" ${req} value="${esc(val)}">`;
+  } else if(f.type==='date'){
+    input = `<input type="date" id="fld_${f.key}" ${req} value="${esc(val)}">`;
+  } else if(f.type==='textarea'){
+    input = `<textarea id="fld_${f.key}" rows="2">${esc(val)}</textarea>`;
+  } else if(f.type==='select'){
+    input = `<select id="fld_${f.key}" ${req}><option value="">— Select —</option>` +
+      f.options.map(o=>`<option value="${esc(o)}" ${o===val?'selected':''}>${esc(o)}</option>`).join('') + `</select>`;
+  } else if(f.type.startsWith('select-')){
+    const opts = optionsForSelectEntity(f.type);
+    input = `<select id="fld_${f.key}" ${req}><option value="">— Select —</option>` +
+      opts.map(o=>`<option value="${esc(o.value)}" ${o.value===val?'selected':''}>${esc(o.label)}</option>`).join('') + `</select>`;
+  }
+  return `<div class="field ${colClass}"><label>${esc(f.label)}${f.required?' *':''}</label>${input}</div>`;
+}
+function readFieldValue(f){
+  const el = document.getElementById('fld_'+f.key);
+  if(!el) return undefined;
+  return el.value;
+}
+function validateFields(fields){
+  for(const f of fields){
+    if(f.required){
+      const v = readFieldValue(f);
+      if(!v || !v.trim()){ toast(`"${f.label}" is required.`,'error'); return false; }
+    }
+    if(f.type==='number'){
+      const v = readFieldValue(f);
+      if(v!=='' && (isNaN(Number(v)) || Number(v)<0)){ toast(`"${f.label}" must be a valid non-negative number.`,'error'); return false; }
+    }
+  }
+  return true;
+}
+
+/* Generic Add/Edit modal for a simple entity */
+async function openEntityModal(entityKey, id, presetFields){
+  const cfg = ENTITY[entityKey];
+  const rec = id ? await dbGet(cfg.store, id) : Object.assign({}, cfg.defaults? cfg.defaults():{}, presetFields||{});
+  const fieldsHtml = cfg.fields.map(f=>renderFieldHtml(f, rec[f.key])).join('');
+  openModal(`
+    <div class="modal-head"><h3>${id?'Edit':'Add New'} ${esc(cfg.label)}</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body"><div class="form-grid">${fieldsHtml}</div></div>
+    <div class="modal-foot">
+      <button class="btn btn-outline btn-sm" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="entitySaveBtn">${id?'Save Changes':'Add '+esc(cfg.label)}</button>
+    </div>`);
+  document.getElementById('entitySaveBtn').onclick = async ()=>{
+    if(!validateFields(cfg.fields)) return;
+    const out = id? Object.assign({}, rec) : Object.assign({id:uid(cfg.idPrefix)}, cfg.defaults?cfg.defaults():{}, presetFields||{});
+    cfg.fields.forEach(f=>{ let v = readFieldValue(f); if(f.type==='number') v = v===''?0:Number(v); out[f.key]=v; });
+    if(entityKey==='clients' && !out.clientId) out.clientId = out.id;
+    if(!out.createdAt) out.createdAt = nowIso();
+    out.updatedAt = nowIso();
+    await dbPut(cfg.store, out);
+    if(cfg.afterSave) await cfg.afterSave(out);
+    await refreshCache([cfg.store, ...(cfg.afterSave?['fees']:[])]);
+    await logAudit(id?'Edited':'Created', cfg.label, out.id);
+    toast(`${cfg.label} ${id?'updated':'added'} successfully.`,'success');
+    closeModal();
+    router();
+  };
+}
+async function deleteEntityRecord(entityKey, id, refreshExtra){
+  const cfg = ENTITY[entityKey];
+  const ok = await confirmDialog(`Delete ${cfg.label}?`, `This will permanently remove this ${cfg.label.toLowerCase()} record. This action cannot be undone.`, {okText:'Delete'});
+  if(!ok) return false;
+  await dbDel(cfg.store, id);
+  await refreshCache([cfg.store, ...(refreshExtra||[])]);
+  await logAudit('Deleted', cfg.label, id);
+  toast(`${cfg.label} deleted.`,'success');
+  return true;
+}
+
+/* ---------------------------------------------------------------------
+   7. GENERIC LIST VIEW (table with search/filter/sort/print/export)
+   --------------------------------------------------------------------- */
+const LIST_STATE = {}; // per-entity: {search, filter, sort}
+
+function getListRows(entityKey, sourceOverride){
+  const cfg = ENTITY[entityKey];
+  let rows = sourceOverride || CACHE[cfg.store] || [];
+  const st = LIST_STATE[entityKey] = LIST_STATE[entityKey] || {search:'', filter:''};
+  if(st.search){
+    const q = st.search.toLowerCase();
+    rows = rows.filter(r=> (cfg.searchFields||[]).concat(['id']).some(k=> String(r[k]||'').toLowerCase().includes(q)) ||
+      String(r.fullName||r.title||r.caseNumber||r.courtName||'').toLowerCase().includes(q));
+  }
+  if(st.filter && cfg.filterField){ rows = rows.filter(r=> r[cfg.filterField.key]===st.filter); }
+  return rows.slice().sort((a,b)=> (b.createdAt||'').localeCompare(a.createdAt||''));
+}
+
+function renderListView(entityKey, opts){
+  opts = opts || {};
+  const cfg = ENTITY[entityKey];
+  const container = document.getElementById('view-'+(opts.viewId||entityKey));
+  const rows = getListRows(entityKey, opts.rows);
+  const st = LIST_STATE[entityKey];
+  container.innerHTML = `
+    <div class="page-head">
+      <div><h2>${esc(opts.title||cfg.labelPlural)}</h2><p>${opts.subtitle||`Manage all ${cfg.labelPlural.toLowerCase()} records`}</p></div>
+      <div class="page-actions">
+        <button class="btn btn-outline btn-sm" data-act="export">⬇ Export CSV</button>
+        <button class="btn btn-outline btn-sm" data-act="print">🖨 Print</button>
+        ${can(cfg.permission)&&!opts.readOnly? `<button class="btn btn-gold btn-sm" data-act="add">+ Add ${esc(cfg.label)}</button>`:''}
+      </div>
+    </div>
+    <div class="toolbar">
+      <input type="text" placeholder="Search ${cfg.labelPlural.toLowerCase()}..." id="lv_search_${entityKey}" value="${esc(st.search)}">
+      ${cfg.filterField? `<select id="lv_filter_${entityKey}"><option value="">All ${cfg.filterField.key}</option>${cfg.filterField.options.map(o=>`<option value="${esc(o)}" ${o===st.filter?'selected':''}>${esc(o)}</option>`).join('')}</select>`:''}
+      <div class="spacer"></div>
+      <span style="font-size:12px;color:var(--text-2)">${rows.length} record${rows.length!==1?'s':''}</span>
+    </div>
+    <div class="card"><div class="card-body" style="padding:0;overflow-x:auto;">
+      ${rows.length? `<table><thead><tr>${cfg.columns.map(c=>`<th>${esc(c.label)}</th>`).join('')}<th class="no-print"></th></tr></thead>
+        <tbody>${rows.map(r=>`<tr>${cfg.columns.map(c=> `<td>${c.render? c.render(r) : esc(r[c.key])}</td>`).join('')}
+          <td class="no-print" style="text-align:right;white-space:nowrap;">
+            <button class="btn btn-outline btn-icon btn-sm" data-act="edit" data-id="${r.id}" title="Edit">✎</button>
+            <button class="btn btn-danger btn-icon btn-sm" data-act="del" data-id="${r.id}" title="Delete">🗑</button>
+          </td></tr>`).join('')}</tbody></table>`
+      : `<div class="empty-state"><div class="ic">📁</div><h4>No ${cfg.labelPlural.toLowerCase()} found</h4><p>Get started by adding your first record.</p>
+          ${can(cfg.permission)? `<button class="btn btn-gold btn-sm" data-act="add">+ Add ${esc(cfg.label)}</button>`:''}</div>`}
+    </div></div>`;
+
+  container.querySelector(`#lv_search_${entityKey}`).addEventListener('input', (e)=>{ st.search = e.target.value; renderListView(entityKey, opts); });
+  const filterEl = container.querySelector(`#lv_filter_${entityKey}`);
+  if(filterEl) filterEl.addEventListener('change', (e)=>{ st.filter = e.target.value; renderListView(entityKey, opts); });
+
+  container.querySelectorAll('[data-act="add"]').forEach(b=> b.onclick = ()=> opts.onAdd? opts.onAdd() : openEntityModal(entityKey));
+  container.querySelectorAll('[data-act="edit"]').forEach(b=> b.onclick = ()=> opts.onEdit? opts.onEdit(b.dataset.id) : openEntityModal(entityKey, b.dataset.id));
+  container.querySelectorAll('[data-act="del"]').forEach(b=> b.onclick = async ()=>{ if(await deleteEntityRecord(entityKey, b.dataset.id, opts.refreshExtra)) renderListView(entityKey, opts); });
+  container.querySelectorAll('[data-open]').forEach(b=> b.onclick = ()=> navigateTo(b.dataset.open, b.dataset.id));
+  const exportBtn = container.querySelector('[data-act="export"]');
+  if(exportBtn) exportBtn.onclick = ()=> csvExport(`${entityKey}.csv`, rows, cfg.columns.map(c=>c.key));
+  const printBtn = container.querySelector('[data-act="print"]');
+  if(printBtn) printBtn.onclick = ()=> printSection(`<h1>${esc(opts.title||cfg.labelPlural)}</h1><h2>Printed ${fmtDateTime(nowIso())}</h2>
+    <table><thead><tr>${cfg.columns.map(c=>`<th>${esc(c.label)}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(r=>`<tr>${cfg.columns.map(c=>`<td>${(c.render?stripTags(c.render(r)):esc(r[c.key]))}</td>`).join('')}</tr>`).join('')}</tbody></table>`, opts.title||cfg.labelPlural);
+}
+function stripTags(html){ const d = document.createElement('div'); d.innerHTML = html; return d.textContent; }
+
+/* ---------------------------------------------------------------------
+   8. CASES: list view + full case workspace detail page (tabs)
+   --------------------------------------------------------------------- */
+function renderCasesView(){
+  const cfg = {
+    columns:[
+      {key:'caseNumber', label:'Case #', render:r=>`<span class="rowlink" data-open="caseDetail" data-id="${r.id}">${esc(r.caseNumber)}</span><br><small style="color:var(--text-2)">${esc(r.caseTitle||'')}</small>`},
+      {key:'clientId', label:'Client', render:r=>clientRefHtml(r.clientId)},
+      {key:'caseType', label:'Type'},
+      {key:'court', label:'Court'},
+      {key:'nextHearingDate', label:'Next Hearing', render:r=>fmtDate(r.nextHearingDate)},
+      {key:'priority', label:'Priority', render:r=>priorityBadge(r.priority)},
+      {key:'status', label:'Status', render:r=>badge(r.status)},
+    ]
+  };
+  const st = LIST_STATE.cases = LIST_STATE.cases || {search:'', filter:''};
+  let rows = CACHE.cases.slice();
+  if(st.search){ const q=st.search.toLowerCase(); rows = rows.filter(r=> [r.caseNumber,r.caseTitle,r.court,r.opposingParty].some(v=>String(v||'').toLowerCase().includes(q)) || clientRefText(r.clientId).toLowerCase().includes(q)); }
+  if(st.filter){ rows = rows.filter(r=>r.status===st.filter); }
+  rows.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+  const container = document.getElementById('view-cases');
+  container.innerHTML = `
+    <div class="page-head">
+      <div><h2>Cases</h2><p>Manage all case files</p></div>
+      <div class="page-actions">
+        <button class="btn btn-outline btn-sm" data-act="export">⬇ Export CSV</button>
+        <button class="btn btn-outline btn-sm" data-act="print">🖨 Print</button>
+        ${can('cases')?`<button class="btn btn-gold btn-sm" data-act="add">+ New Case</button>`:''}
+      </div>
+    </div>
+    <div class="toolbar">
+      <input type="text" id="cs_search" placeholder="Search case #, title, court, opposite party, client..." value="${esc(st.search)}">
+      <select id="cs_filter"><option value="">All Status</option>${OPT.caseStatus.map(o=>`<option value="${esc(o)}" ${o===st.filter?'selected':''}>${esc(o)}</option>`).join('')}</select>
+      <div class="spacer"></div><span style="font-size:12px;color:var(--text-2)">${rows.length} case(s)</span>
+    </div>
+    <div class="card"><div class="card-body" style="padding:0;overflow-x:auto;">
+      ${rows.length? `<table><thead><tr>${cfg.columns.map(c=>`<th>${esc(c.label)}</th>`).join('')}<th class="no-print"></th></tr></thead>
+        <tbody>${rows.map(r=>`<tr>${cfg.columns.map(c=>`<td>${c.render? c.render(r) : esc(r[c.key])}</td>`).join('')}
+          <td class="no-print" style="text-align:right;white-space:nowrap;"><button class="btn btn-outline btn-icon btn-sm" data-edit="${r.id}">✎</button> <button class="btn btn-danger btn-icon btn-sm" data-del="${r.id}">🗑</button></td></tr>`).join('')}</tbody></table>`
+      : `<div class="empty-state"><div class="ic">⚖️</div><h4>No cases found</h4><p>Start by filing a new case.</p>${can('cases')?`<button class="btn btn-gold btn-sm" data-act="add">+ New Case</button>`:''}</div>`}
+    </div></div>`;
+  container.querySelector('#cs_search').addEventListener('input', e=>{ st.search=e.target.value; renderCasesView(); });
+  container.querySelector('#cs_filter').addEventListener('change', e=>{ st.filter=e.target.value; renderCasesView(); });
+  container.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>navigateTo('caseDetail', b.dataset.id));
+  const addBtn = container.querySelector('[data-act="add"]'); if(addBtn) addBtn.onclick = ()=> openCaseModal();
+  container.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openCaseModal(b.dataset.edit));
+  container.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{ if(await deleteEntityRecord('cases', b.dataset.del)) { renderCasesView(); } });
+  const exportBtn = container.querySelector('[data-act="export"]'); if(exportBtn) exportBtn.onclick=()=>csvExport('cases.csv', rows, ['caseNumber','caseTitle','caseType','court','status','priority','nextHearingDate']);
+  const printBtn = container.querySelector('[data-act="print"]'); if(printBtn) printBtn.onclick=()=>printSection(`<h1>Case List</h1><h2>Printed ${fmtDateTime(nowIso())}</h2><table><thead><tr>${cfg.columns.map(c=>`<th>${esc(c.label)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${cfg.columns.map(c=>`<td>${stripTags(c.render? c.render(r) : String(r[c.key]||''))}</td>`).join('')}</tr>`).join('')}</tbody></table>`,'Case List');
+}
+function clientRefText(id){ const c = CACHE.clients.find(x=>x.id===id); return c? c.fullName : ''; }
+
+const CASE_FIELDS = [
+  {key:'caseNumber', label:'Case Number', type:'text', required:true},
+  {key:'caseTitle', label:'Case Title', type:'text', required:true},
+  {key:'clientId', label:'Client', type:'select-client', required:true},
+  {key:'caseType', label:'Case Type', type:'select', options:OPT.caseType},
+  {key:'court', label:'Court', type:'select-court'},
+  {key:'courtLocation', label:'Court Location', type:'text'},
+  {key:'judge', label:'Judge', type:'text'},
+  {key:'opposingParty', label:'Opposite Party (name)', type:'text'},
+  {key:'opposingLawyer', label:'Opposite Lawyer', type:'text'},
+  {key:'filingDate', label:'Filing Date', type:'date'},
+  {key:'registrationDate', label:'Registration Date', type:'date'},
+  {key:'nextHearingDate', label:'Next Hearing Date', type:'date'},
+  {key:'status', label:'Case Status', type:'select', options:OPT.caseStatus},
+  {key:'priority', label:'Priority', type:'select', options:OPT.priority},
+  {key:'lawyerAssigned', label:'Lawyer Assigned', type:'select-user'},
+  {key:'description', label:'Description', type:'textarea', col:2},
+  {key:'remarks', label:'Remarks', type:'textarea', col:2},
+];
+async function openCaseModal(id, presetClientId){
+  const rec = id? await dbGet('cases', id) : {status:'New', priority:'Normal', filingDate:todayStr(), clientId:presetClientId||''};
+  openModal(`
+    <div class="modal-head"><h3>${id?'Edit Case':'New Case'}</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body"><div class="form-grid">${CASE_FIELDS.map(f=>renderFieldHtml(f, rec[f.key])).join('')}</div></div>
+    <div class="modal-foot"><button class="btn btn-outline btn-sm" onclick="closeModal()">Cancel</button><button class="btn btn-primary btn-sm" id="caseSaveBtn">${id?'Save Changes':'Create Case'}</button></div>`, {wide:true});
+  document.getElementById('caseSaveBtn').onclick = async ()=>{
+    if(!validateFields(CASE_FIELDS)) return;
+    const out = id? Object.assign({}, rec) : {id:uid('CASE'), createdAt:nowIso()};
+    CASE_FIELDS.forEach(f=> out[f.key] = readFieldValue(f));
+    out.updatedAt = nowIso();
+    await dbPut('cases', out);
+    await refreshCache(['cases']);
+    await logAudit(id?'Case Edited':'Case Created', 'Case', out.caseNumber);
+    toast(`Case ${id?'updated':'created'} successfully.`,'success');
+    closeModal(); router();
+  };
+}
+
+async function renderCaseDetail(id){
+  const container = document.getElementById('view-caseDetail');
+  const c = CACHE.cases.find(x=>x.id===id);
+  if(!c){ container.innerHTML = `<div class="empty-state"><div class="ic">❓</div><h4>Case not found</h4></div>`; return; }
+  const client = CACHE.clients.find(x=>x.id===c.clientId);
+  const hearings = CACHE.hearings.filter(h=>h.caseId===id).sort((a,b)=>(b.hearingDate||'').localeCompare(a.hearingDate||''));
+  const docs = CACHE.documents.filter(d=>d.caseId===id);
+  const tasks = CACHE.tasks.filter(t=>t.caseId===id);
+  const fees = CACHE.fees.filter(f=>f.caseId===id);
+  const expenses = CACHE.expenses.filter(e=>e.caseId===id);
+  const notes = CACHE.notes.filter(n=>n.caseId===id).sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+  const parties = CACHE.caseParties.filter(p=>p.caseId===id);
+  const totalFee = fees.reduce((s,f)=>s+(Number(f.amount)||0),0);
+  const totalRecv = fees.reduce((s,f)=>s+(Number(f.receivedAmount)||0),0);
+  const totalExp = expenses.reduce((s,e)=>s+(Number(e.amount)||0),0);
+
+  const timelineEvents = [];
+  if(c.filingDate) timelineEvents.push({date:c.filingDate, title:'Case Filed', desc:c.caseTitle});
+  if(c.registrationDate) timelineEvents.push({date:c.registrationDate, title:'Case Registered', desc:''});
+  hearings.forEach(h=> timelineEvents.push({date:h.hearingDate, title:`Hearing — ${h.hearingType||'Hearing'}`, desc:h.result||h.purpose||''}));
+  docs.forEach(d=> timelineEvents.push({date:d.uploadDate, title:`Document Added — ${d.title}`, desc:d.category}));
+  timelineEvents.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+
+  container.innerHTML = `
+    <div class="page-head no-print">
+      <div><span style="font-size:12px;color:var(--blue);cursor:pointer" data-nav="cases">← Back to Cases</span></div>
+      <div class="page-actions">
+        <button class="btn btn-outline btn-sm" id="printCaseBtn">🖨 Print Case Summary</button>
+        <button class="btn btn-outline btn-sm" id="editCaseBtn">✎ Edit Case</button>
+      </div>
+    </div>
+    <div class="detail-hero">
+      <div class="detail-avatar">⚖</div>
+      <div>
+        <h2>${esc(c.caseNumber)} — ${esc(c.caseTitle||'')}</h2>
+        <p>${badge(c.status)} ${priorityBadge(c.priority)} &nbsp; ${esc(c.caseType||'')} &nbsp; · &nbsp; Client: <span class="rowlink" data-open="clients" data-id="${c.clientId}">${esc(client?client.fullName:'—')}</span></p>
+        <div class="stat-strip">
+          <div><b>${esc(c.court||'—')}</b><span>Court</span></div>
+          <div><b>${fmtDate(c.nextHearingDate)}</b><span>Next Hearing</span></div>
+          <div><b>${fmtMoney(totalFee-totalRecv)}</b><span>Outstanding Fee</span></div>
+          <div><b>${fmtMoney(totalExp)}</b><span>Total Expenses</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="tabs no-print">
+      ${['overview','hearings','parties','documents','tasks','fees','expenses','notes','timeline'].map((t,i)=>`<div class="tab-btn ${i===0?'active':''}" data-tab="${t}">${t.charAt(0).toUpperCase()+t.slice(1)}</div>`).join('')}
+    </div>
+    <div class="tab-pane active" data-pane="overview">
+      <div class="grid-2">
+        <div class="card"><div class="card-head"><h3>Case Information</h3></div><div class="card-body">
+          <table><tbody>
+            <tr><td style="color:var(--text-2)">Case Number</td><td><b>${esc(c.caseNumber)}</b></td></tr>
+            <tr><td style="color:var(--text-2)">Case Title</td><td>${esc(c.caseTitle||'—')}</td></tr>
+            <tr><td style="color:var(--text-2)">Case Type</td><td>${esc(c.caseType||'—')}</td></tr>
+            <tr><td style="color:var(--text-2)">Court</td><td>${esc(c.court||'—')} ${esc(c.courtLocation||'')}</td></tr>
+            <tr><td style="color:var(--text-2)">Judge</td><td>${esc(c.judge||'—')}</td></tr>
+            <tr><td style="color:var(--text-2)">Opposite Party</td><td>${esc(c.opposingParty||'—')}</td></tr>
+            <tr><td style="color:var(--text-2)">Opposite Lawyer</td><td>${esc(c.opposingLawyer||'—')}</td></tr>
+            <tr><td style="color:var(--text-2)">Filing Date</td><td>${fmtDate(c.filingDate)}</td></tr>
+            <tr><td style="color:var(--text-2)">Lawyer Assigned</td><td>${esc(c.lawyerAssigned||'—')}</td></tr>
+          </tbody></table>
+        </div></div>
+        <div class="card"><div class="card-head"><h3>Description &amp; Remarks</h3></div><div class="card-body">
+          <p style="font-size:13px;margin-bottom:10px;">${esc(c.description||'No description provided.')}</p>
+          <p style="font-size:12.5px;color:var(--text-2)">${esc(c.remarks||'')}</p>
+        </div></div>
+      </div>
+    </div>
+    <div class="tab-pane" data-pane="hearings"><div id="caseHearingsBox"></div></div>
+    <div class="tab-pane" data-pane="parties"><div id="casePartiesBox"></div></div>
+    <div class="tab-pane" data-pane="documents"><div id="caseDocsBox"></div></div>
+    <div class="tab-pane" data-pane="tasks"><div id="caseTasksBox"></div></div>
+    <div class="tab-pane" data-pane="fees"><div id="caseFeesBox"></div></div>
+    <div class="tab-pane" data-pane="expenses"><div id="caseExpensesBox"></div></div>
+    <div class="tab-pane" data-pane="notes"><div id="caseNotesBox"></div></div>
+    <div class="tab-pane" data-pane="timeline">
+      <div class="card"><div class="card-body">
+        ${timelineEvents.length? `<div class="timeline">${timelineEvents.map(t=>`<div class="tl-item"><div class="tl-date">${fmtDate(t.date)}</div><div class="tl-title">${esc(t.title)}</div><div class="tl-desc">${esc(t.desc||'')}</div></div>`).join('')}</div>`
+        : `<div class="empty-state"><div class="ic">🕓</div><h4>No timeline events yet</h4></div>`}
+      </div></div>
+    </div>`;
+
+  container.querySelectorAll('.tab-btn').forEach(b=> b.onclick = ()=>{
+    container.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+    container.querySelectorAll('.tab-pane').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); container.querySelector(`[data-pane="${b.dataset.tab}"]`).classList.add('active');
+  });
+  container.querySelector('[data-nav="cases"]').onclick = ()=>navigateTo('cases');
+  container.querySelector('#editCaseBtn').onclick = ()=>openCaseModal(id);
+  container.querySelector('#printCaseBtn').onclick = ()=>printSection(`<h1>${esc(c.caseNumber)}</h1><h2>${esc(c.caseTitle||'')} — Printed ${fmtDateTime(nowIso())}</h2>
+    <p><b>Client:</b> ${esc(client?client.fullName:'—')} &nbsp; <b>Status:</b> ${esc(c.status)} &nbsp; <b>Court:</b> ${esc(c.court||'—')}</p>
+    <p><b>Filing Date:</b> ${fmtDate(c.filingDate)} &nbsp; <b>Next Hearing:</b> ${fmtDate(c.nextHearingDate)}</p>
+    <p>${esc(c.description||'')}</p>
+    <h3 style="margin-top:16px;">Hearing History</h3>
+    <table><thead><tr><th>Date</th><th>Type</th><th>Result</th><th>Next Date</th></tr></thead><tbody>${hearings.map(h=>`<tr><td>${fmtDate(h.hearingDate)}</td><td>${esc(h.hearingType||'')}</td><td>${esc(h.result||'')}</td><td>${fmtDate(h.nextDate)}</td></tr>`).join('')}</tbody></table>`, c.caseNumber);
+
+  // --- Hearings tab ---
+  const renderCaseHearings = ()=>{
+    document.getElementById('caseHearingsBox').innerHTML = `
+      <div class="page-actions" style="margin-bottom:12px;">${can('hearings')?`<button class="btn btn-gold btn-sm" id="addHearingBtn">+ Add Hearing</button>`:''}</div>
+      ${hearings.length? `<div class="card"><div class="card-body" style="padding:0;overflow-x:auto;"><table><thead><tr><th>Date</th><th>Time</th><th>Type</th><th>Court</th><th>Status</th><th>Result</th><th>Next Date</th><th class="no-print"></th></tr></thead>
+      <tbody>${hearings.map(h=>`<tr><td>${fmtDate(h.hearingDate)}</td><td>${esc(h.hearingTime||'—')}</td><td>${esc(h.hearingType||'—')}</td><td>${esc(h.court||'—')}</td><td>${badge(h.status)}</td><td>${esc(h.result||'—')}</td><td>${fmtDate(h.nextDate)}</td>
+      <td class="no-print"><button class="btn btn-outline btn-icon btn-sm" data-eh="${h.id}">✎</button> <button class="btn btn-danger btn-icon btn-sm" data-dh="${h.id}">🗑</button></td></tr>`).join('')}</tbody></table></div></div>`
+      : `<div class="empty-state"><div class="ic">📅</div><h4>No hearings recorded</h4></div>`}`;
+    const ab = document.getElementById('addHearingBtn'); if(ab) ab.onclick = ()=>openEntityModal('hearings', null, {caseId:id, clientId:c.clientId});
+    document.querySelectorAll('[data-eh]').forEach(b=>b.onclick=()=>openEntityModal('hearings', b.dataset.eh));
+    document.querySelectorAll('[data-dh]').forEach(b=>b.onclick=async()=>{ if(await deleteEntityRecord('hearings', b.dataset.dh)) navigateTo('caseDetail', id); });
+  };
+  renderCaseHearings();
+
+  // --- Parties tab ---
+  const renderParties = ()=>{
+    document.getElementById('casePartiesBox').innerHTML = `
+      <div class="card"><div class="card-head"><h3>Client</h3></div><div class="card-body">
+        <b>${esc(client?client.fullName:'—')}</b><br><small style="color:var(--text-2)">${esc(client?client.phone:'')} · ${esc(client?client.cnic:'')}</small>
+      </div></div>
+      <div class="card"><div class="card-head"><h3>Opposite Parties</h3><span class="link" id="addPartyLink">+ Add Party</span></div><div class="card-body" style="padding:0;">
+        ${parties.length? `<table><thead><tr><th>Name</th><th>Father/Husband</th><th>CNIC</th><th>Phone</th><th>Lawyer</th><th class="no-print"></th></tr></thead>
+        <tbody>${parties.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.guardianName||'—')}</td><td>${esc(p.cnic||'—')}</td><td>${esc(p.phone||'—')}</td><td>${esc(p.lawyer||'—')}</td><td class="no-print"><button class="btn btn-danger btn-icon btn-sm" data-dp="${p.id}">🗑</button></td></tr>`).join('')}</tbody></table>`
+        : `<div class="empty-state"><div class="ic">👤</div><h4>No opposite parties added</h4></div>`}
+      </div></div>`;
+    document.getElementById('addPartyLink').onclick = ()=>{
+      const pf=[{key:'name',label:'Name',type:'text',required:true},{key:'guardianName',label:'Father/Husband Name',type:'text'},
+        {key:'cnic',label:'CNIC',type:'text'},{key:'phone',label:'Phone',type:'text'},{key:'lawyer',label:'Lawyer',type:'text'},{key:'address',label:'Address',type:'textarea',col:2},{key:'notes',label:'Notes',type:'textarea',col:2}];
+      openModal(`<div class="modal-head"><h3>Add Opposite Party</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+        <div class="modal-body"><div class="form-grid">${pf.map(f=>renderFieldHtml(f,'')).join('')}</div></div>
+        <div class="modal-foot"><button class="btn btn-outline btn-sm" onclick="closeModal()">Cancel</button><button class="btn btn-primary btn-sm" id="savePartyBtn">Add Party</button></div>`);
+      document.getElementById('savePartyBtn').onclick = async ()=>{
+        if(!validateFields(pf)) return;
+        const out = {id:uid('OP'), caseId:id, createdAt:nowIso()};
+        pf.forEach(f=> out[f.key]=readFieldValue(f));
+        await dbPut('caseParties', out); await refreshCache(['caseParties']);
+        toast('Opposite party added.','success'); closeModal(); navigateTo('caseDetail', id);
+      };
+    };
+    document.querySelectorAll('[data-dp]').forEach(b=>b.onclick=async()=>{ const ok=await confirmDialog('Delete Party?','Remove this opposite party from the case.',{okText:'Delete'}); if(ok){ await dbDel('caseParties', b.dataset.dp); await refreshCache(['caseParties']); navigateTo('caseDetail', id);} });
+  };
+  renderParties();
+
+  // --- Documents tab ---
+  const renderDocs = ()=>{
+    document.getElementById('caseDocsBox').innerHTML = `
+      <div class="page-actions" style="margin-bottom:12px;">${can('documents')?`<button class="btn btn-gold btn-sm" id="addDocBtn">+ Add Document</button>`:''}</div>
+      ${docs.length? `<div class="card"><div class="card-body" style="padding:0;overflow-x:auto;"><table><thead><tr><th>Title</th><th>Category</th><th>Location</th><th>Added</th><th class="no-print"></th></tr></thead>
+      <tbody>${docs.map(d=>`<tr><td>${esc(d.title)}</td><td>${esc(d.category||'—')}</td><td>${esc(d.filePath||'—')}</td><td>${fmtDate(d.uploadDate)}</td><td class="no-print"><button class="btn btn-outline btn-icon btn-sm" data-ed="${d.id}">✎</button> <button class="btn btn-danger btn-icon btn-sm" data-dd="${d.id}">🗑</button></td></tr>`).join('')}</tbody></table></div></div>`
+      : `<div class="empty-state"><div class="ic">📄</div><h4>No documents linked to this case</h4></div>`}`;
+    const ab=document.getElementById('addDocBtn'); if(ab) ab.onclick=()=>openEntityModal('documents', null, {caseId:id, clientId:c.clientId});
+    document.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>openEntityModal('documents', b.dataset.ed));
+    document.querySelectorAll('[data-dd]').forEach(b=>b.onclick=async()=>{ if(await deleteEntityRecord('documents', b.dataset.dd)) navigateTo('caseDetail', id); });
+  };
+  renderDocs();
+
+  // --- Tasks tab ---
+  const renderCTasks = ()=>{
+    document.getElementById('caseTasksBox').innerHTML = `
+      <div class="page-actions" style="margin-bottom:12px;">${can('tasks')?`<button class="btn btn-gold btn-sm" id="addTaskBtn">+ Add Task</button>`:''}</div>
+      ${tasks.length? `<div class="card"><div class="card-body" style="padding:0;overflow-x:auto;"><table><thead><tr><th>Task</th><th>Assigned</th><th>Due</th><th>Priority</th><th>Status</th><th class="no-print"></th></tr></thead>
+      <tbody>${tasks.map(t=>`<tr><td>${esc(t.title)}</td><td>${esc(t.assignedTo||'—')}</td><td>${fmtDate(t.dueDate)}</td><td>${priorityBadge(t.priority)}</td><td>${badge(t.status)}</td><td class="no-print"><button class="btn btn-outline btn-icon btn-sm" data-et="${t.id}">✎</button> <button class="btn btn-danger btn-icon btn-sm" data-dt="${t.id}">🗑</button></td></tr>`).join('')}</tbody></table></div></div>`
+      : `<div class="empty-state"><div class="ic">✅</div><h4>No tasks for this case</h4></div>`}`;
+    const ab=document.getElementById('addTaskBtn'); if(ab) ab.onclick=()=>openEntityModal('tasks', null, {caseId:id, clientId:c.clientId});
+    document.querySelectorAll('[data-et]').forEach(b=>b.onclick=()=>openEntityModal('tasks', b.dataset.et));
+    document.querySelectorAll('[data-dt]').forEach(b=>b.onclick=async()=>{ if(await deleteEntityRecord('tasks', b.dataset.dt)) navigateTo('caseDetail', id); });
+  };
+  renderCTasks();
+
+  // --- Fees tab ---
+  const renderCFees = ()=>{
+    document.getElementById('caseFeesBox').innerHTML = `
+      <div class="page-actions" style="margin-bottom:12px;">${can('fees')?`<button class="btn btn-gold btn-sm" id="addFeeBtn">+ Add Fee</button>`:''}</div>
+      <div class="ledger-total"><div><b>${fmtMoney(totalFee)}</b><span>Total Fee</span></div><div><b>${fmtMoney(totalRecv)}</b><span>Received</span></div><div><b style="color:var(--red)">${fmtMoney(totalFee-totalRecv)}</b><span>Outstanding</span></div></div>
+      ${fees.length? `<div class="card"><div class="card-body" style="padding:0;overflow-x:auto;"><table><thead><tr><th>Type</th><th>Amount</th><th>Received</th><th>Outstanding</th><th>Status</th><th class="no-print"></th></tr></thead>
+      <tbody>${fees.map(f=>`<tr><td>${esc(f.feeType||'—')}</td><td>${fmtMoney(f.amount)}</td><td>${fmtMoney(f.receivedAmount)}</td><td>${fmtMoney((f.amount||0)-(f.receivedAmount||0))}</td><td>${badge(f.paymentStatus)}</td><td class="no-print"><button class="btn btn-outline btn-icon btn-sm" data-ef="${f.id}">✎</button> <button class="btn btn-danger btn-icon btn-sm" data-df="${f.id}">🗑</button></td></tr>`).join('')}</tbody></table></div></div>`
+      : `<div class="empty-state"><div class="ic">💰</div><h4>No fees recorded for this case</h4></div>`}`;
+    const ab=document.getElementById('addFeeBtn'); if(ab) ab.onclick=()=>openEntityModal('fees', null, {caseId:id, clientId:c.clientId});
+    document.querySelectorAll('[data-ef]').forEach(b=>b.onclick=()=>openEntityModal('fees', b.dataset.ef));
+    document.querySelectorAll('[data-df]').forEach(b=>b.onclick=async()=>{ if(await deleteEntityRecord('fees', b.dataset.df)) navigateTo('caseDetail', id); });
+  };
+  renderCFees();
+
+  // --- Expenses tab ---
+  const renderCExp = ()=>{
+    document.getElementById('caseExpensesBox').innerHTML = `
+      <div class="page-actions" style="margin-bottom:12px;">${can('expenses')?`<button class="btn btn-gold btn-sm" id="addExpBtn">+ Add Expense</button>`:''}</div>
+      <div class="ledger-total"><div><b>${fmtMoney(totalExp)}</b><span>Total Case Expenses</span></div></div>
+      ${expenses.length? `<div class="card"><div class="card-body" style="padding:0;overflow-x:auto;"><table><thead><tr><th>Date</th><th>Category</th><th>Amount</th><th>Paid By</th><th class="no-print"></th></tr></thead>
+      <tbody>${expenses.map(e=>`<tr><td>${fmtDate(e.date)}</td><td>${esc(e.category||'—')}</td><td>${fmtMoney(e.amount)}</td><td>${esc(e.paidBy||'—')}</td><td class="no-print"><button class="btn btn-outline btn-icon btn-sm" data-ee="${e.id}">✎</button> <button class="btn btn-danger btn-icon btn-sm" data-de="${e.id}">🗑</button></td></tr>`).join('')}</tbody></table></div></div>`
+      : `<div class="empty-state"><div class="ic">🧾</div><h4>No expenses recorded for this case</h4></div>`}`;
+    const ab=document.getElementById('addExpBtn'); if(ab) ab.onclick=()=>openEntityModal('expenses', null, {caseId:id, clientId:c.clientId});
+    document.querySelectorAll('[data-ee]').forEach(b=>b.onclick=()=>openEntityModal('expenses', b.dataset.ee));
+    document.querySelectorAll('[data-de]').forEach(b=>b.onclick=async()=>{ if(await deleteEntityRecord('expenses', b.dataset.de)) navigateTo('caseDetail', id); });
+  };
+  renderCExp();
+
+  // --- Notes tab ---
+  const renderNotes = ()=>{
+    document.getElementById('caseNotesBox').innerHTML = `
+      <div class="card"><div class="card-body">
+        <textarea id="newNoteText" rows="3" placeholder="Add a private lawyer note..." style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);"></textarea>
+        <div style="margin-top:8px;text-align:right;"><button class="btn btn-gold btn-sm" id="addNoteBtn">+ Add Note</button></div>
+      </div></div>
+      ${notes.length? notes.map(n=>`<div class="card"><div class="card-body"><p style="font-size:13px;">${esc(n.text)}</p><small style="color:var(--text-2)">${fmtDateTime(n.createdAt)} — ${esc(n.author||'')}</small></div></div>`).join('')
+      : `<div class="empty-state"><div class="ic">📝</div><h4>No notes yet</h4></div>`}`;
+    document.getElementById('addNoteBtn').onclick = async ()=>{
+      const txt = document.getElementById('newNoteText').value.trim();
+      if(!txt){ toast('Note cannot be empty.','error'); return; }
+      await dbPut('notes', {id:uid('NOTE'), caseId:id, text:txt, author:SESSION.fullName, createdAt:nowIso()});
+      await refreshCache(['notes']); toast('Note added.','success'); navigateTo('caseDetail', id);
+    };
+  };
+  renderNotes();
+}
+
+/* ---------------------------------------------------------------------
+   9. CLIENT DETAIL PAGE (profile + ledger)
+   --------------------------------------------------------------------- */
+async function renderClientDetail(id){
+  const container = document.getElementById('view-clientDetail');
+  const c = CACHE.clients.find(x=>x.id===id);
+  if(!c){ container.innerHTML = `<div class="empty-state"><div class="ic">❓</div><h4>Client not found</h4></div>`; return; }
+  const cases = CACHE.cases.filter(x=>x.clientId===id);
+  const activeCases = cases.filter(x=>!['Closed','Won','Lost','Withdrawn','Settled'].includes(x.status));
+  const closedCases = cases.filter(x=>['Closed','Won','Lost','Withdrawn','Settled'].includes(x.status));
+  const hearings = CACHE.hearings.filter(h=> cases.some(cs=>cs.id===h.caseId)).sort((a,b)=>(a.hearingDate||'').localeCompare(b.hearingDate||''));
+  const upcoming = hearings.filter(h=>h.hearingDate>=todayStr());
+  const docs = CACHE.documents.filter(d=>d.clientId===id);
+  const fees = CACHE.fees.filter(f=>f.clientId===id);
+  const payments = CACHE.payments.filter(p=>p.clientId===id);
+  const expenses = CACHE.expenses.filter(e=>e.clientId===id);
+
+  // build ledger: fees = debit, payments = credit
+  let ledgerRows = [];
+  fees.forEach(f=> ledgerRows.push({date:f.dueDate||f.createdAt, desc:`${f.feeType||'Fee'}${f.caseId?' — '+caseLabel(CACHE.cases.find(x=>x.id===f.caseId)):''}`, debit:Number(f.amount)||0, credit:0}));
+  payments.forEach(p=> ledgerRows.push({date:p.date, desc:`Payment received (${p.method||'Cash'})${p.reference?' — Ref: '+p.reference:''}`, debit:0, credit:Number(p.amount)||0}));
+  ledgerRows.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  let running = 0;
+  ledgerRows = ledgerRows.map(r=>{ running += r.debit - r.credit; return Object.assign({},r,{balance:running}); });
+  const totalDebit = ledgerRows.reduce((s,r)=>s+r.debit,0), totalCredit = ledgerRows.reduce((s,r)=>s+r.credit,0);
+
+  container.innerHTML = `
+    <div class="page-head no-print"><div><span style="font-size:12px;color:var(--blue);cursor:pointer" data-nav="clients">← Back to Clients</span></div>
+      <div class="page-actions"><button class="btn btn-outline btn-sm" id="printClientBtn">🖨 Print Profile</button><button class="btn btn-outline btn-sm" id="editClientBtn">✎ Edit</button>${can('cases')?`<button class="btn btn-gold btn-sm" id="newCaseForClientBtn">+ New Case</button>`:''}</div></div>
+    <div class="detail-hero">
+      <div class="detail-avatar">${initials(c.fullName)}</div>
+      <div><h2>${esc(c.fullName)}</h2><p>${badge(c.status)} &nbsp; ${esc(c.clientType||'')} &nbsp; · &nbsp; ${esc(c.phone||'')} &nbsp; · &nbsp; ${esc(c.cnic||'—')}</p>
+      <div class="stat-strip">
+        <div><b>${cases.length}</b><span>Total Cases</span></div>
+        <div><b>${activeCases.length}</b><span>Active</span></div>
+        <div><b>${upcoming.length}</b><span>Upcoming Hearings</span></div>
+        <div><b style="color:${totalDebit-totalCredit>0?'var(--red)':'var(--green)'}">${fmtMoney(totalDebit-totalCredit)}</b><span>Outstanding Balance</span></div>
+      </div></div>
+    </div>
+    <div class="tabs no-print">${['overview','cases','hearings','documents','ledger','notes'].map((t,i)=>`<div class="tab-btn ${i===0?'active':''}" data-tab="${t}">${t.charAt(0).toUpperCase()+t.slice(1)}</div>`).join('')}</div>
+    <div class="tab-pane active" data-pane="overview"><div class="grid-2">
+      <div class="card"><div class="card-head"><h3>Personal Information</h3></div><div class="card-body"><table><tbody>
+        <tr><td style="color:var(--text-2)">Father/Husband</td><td>${esc(c.guardianName||'—')}</td></tr>
+        <tr><td style="color:var(--text-2)">Email</td><td>${esc(c.email||'—')}</td></tr>
+        <tr><td style="color:var(--text-2)">WhatsApp</td><td>${esc(c.whatsapp||'—')}</td></tr>
+        <tr><td style="color:var(--text-2)">Occupation</td><td>${esc(c.occupation||'—')}</td></tr>
+        <tr><td style="color:var(--text-2)">City</td><td>${esc(c.city||'—')}</td></tr>
+        <tr><td style="color:var(--text-2)">Address</td><td>${esc(c.address||'—')}</td></tr>
+        <tr><td style="color:var(--text-2)">Registered</td><td>${fmtDate(c.registrationDate)}</td></tr>
+      </tbody></table></div></div>
+      <div class="card"><div class="card-head"><h3>Notes</h3></div><div class="card-body"><p style="font-size:13px;">${esc(c.notes||'No notes.')}</p></div></div>
+    </div></div>
+    <div class="tab-pane" data-pane="cases"><div id="clientCasesBox"></div></div>
+    <div class="tab-pane" data-pane="hearings"><div id="clientHearingsBox"></div></div>
+    <div class="tab-pane" data-pane="documents"><div id="clientDocsBox"></div></div>
+    <div class="tab-pane" data-pane="ledger"><div id="clientLedgerBox"></div></div>
+    <div class="tab-pane" data-pane="notes"><div class="card"><div class="card-body"><p style="font-size:13px;">${esc(c.notes||'No notes recorded.')}</p></div></div></div>`;
+
+  container.querySelector('[data-nav="clients"]').onclick = ()=>navigateTo('clients');
+  container.querySelector('#editClientBtn').onclick = ()=>openEntityModal('clients', id);
+  container.querySelector('#printClientBtn').onclick = ()=>printSection(`<h1>${esc(c.fullName)}</h1><h2>Client Profile — Printed ${fmtDateTime(nowIso())}</h2>
+    <p><b>CNIC:</b> ${esc(c.cnic||'—')} &nbsp; <b>Phone:</b> ${esc(c.phone||'—')} &nbsp; <b>City:</b> ${esc(c.city||'—')}</p>
+    <h3 style="margin-top:14px;">Cases</h3><table><thead><tr><th>Case #</th><th>Title</th><th>Status</th></tr></thead><tbody>${cases.map(cs=>`<tr><td>${esc(cs.caseNumber)}</td><td>${esc(cs.caseTitle||'')}</td><td>${esc(cs.status)}</td></tr>`).join('')}</tbody></table>
+    <h3 style="margin-top:14px;">Ledger</h3><table><thead><tr><th>Date</th><th>Description</th><th>Debit</th><th>Credit</th><th>Balance</th></tr></thead><tbody>${ledgerRows.map(r=>`<tr><td>${fmtDate(r.date)}</td><td>${esc(r.desc)}</td><td>${r.debit?fmtMoney(r.debit):''}</td><td>${r.credit?fmtMoney(r.credit):''}</td><td>${fmtMoney(r.balance)}</td></tr>`).join('')}</tbody></table>`, c.fullName);
+  const ncb = container.querySelector('#newCaseForClientBtn'); if(ncb) ncb.onclick = ()=>openCaseModal(null, id);
+  container.querySelectorAll('.tab-btn').forEach(b=> b.onclick = ()=>{
+    container.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+    container.querySelectorAll('.tab-pane').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); container.querySelector(`[data-pane="${b.dataset.tab}"]`).classList.add('active');
+  });
+
+  document.getElementById('clientCasesBox').innerHTML = `
+    <div class="card"><div class="card-head"><h3>Active Cases (${activeCases.length})</h3></div><div class="card-body" style="padding:0;">
+      ${activeCases.length? `<table><thead><tr><th>Case #</th><th>Title</th><th>Status</th><th>Next Hearing</th></tr></thead><tbody>${activeCases.map(cs=>`<tr><td><span class="rowlink" data-open="caseDetail" data-id="${cs.id}">${esc(cs.caseNumber)}</span></td><td>${esc(cs.caseTitle||'')}</td><td>${badge(cs.status)}</td><td>${fmtDate(cs.nextHearingDate)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty-state"><p>No active cases.</p></div>`}
+    </div></div>
+    <div class="card"><div class="card-head"><h3>Closed Cases (${closedCases.length})</h3></div><div class="card-body" style="padding:0;">
+      ${closedCases.length? `<table><thead><tr><th>Case #</th><th>Title</th><th>Status</th></tr></thead><tbody>${closedCases.map(cs=>`<tr><td><span class="rowlink" data-open="caseDetail" data-id="${cs.id}">${esc(cs.caseNumber)}</span></td><td>${esc(cs.caseTitle||'')}</td><td>${badge(cs.status)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty-state"><p>No closed cases.</p></div>`}
+    </div></div>`;
+  document.querySelectorAll('#clientCasesBox [data-open]').forEach(b=>b.onclick=()=>navigateTo('caseDetail', b.dataset.id));
+
+  document.getElementById('clientHearingsBox').innerHTML = hearings.length? `<div class="card"><div class="card-body" style="padding:0;overflow-x:auto;"><table><thead><tr><th>Date</th><th>Case</th><th>Court</th><th>Status</th></tr></thead><tbody>${hearings.map(h=>`<tr><td>${fmtDate(h.hearingDate)}</td><td><span class="rowlink" data-open="caseDetail" data-id="${h.caseId}">${caseRefText(h.caseId)}</span></td><td>${esc(h.court||'—')}</td><td>${badge(h.status)}</td></tr>`).join('')}</tbody></table></div></div>` : `<div class="empty-state"><div class="ic">📅</div><h4>No hearings yet</h4></div>`;
+  document.querySelectorAll('#clientHearingsBox [data-open]').forEach(b=>b.onclick=()=>navigateTo('caseDetail', b.dataset.id));
+
+  document.getElementById('clientDocsBox').innerHTML = docs.length? `<div class="card"><div class="card-body" style="padding:0;overflow-x:auto;"><table><thead><tr><th>Title</th><th>Category</th><th>Location</th><th>Added</th></tr></thead><tbody>${docs.map(d=>`<tr><td>${esc(d.title)}</td><td>${esc(d.category||'—')}</td><td>${esc(d.filePath||'—')}</td><td>${fmtDate(d.uploadDate)}</td></tr>`).join('')}</tbody></table></div></div>` : `<div class="empty-state"><div class="ic">📄</div><h4>No documents</h4></div>`;
+
+  document.getElementById('clientLedgerBox').innerHTML = `
+    <div class="ledger-total"><div><b>${fmtMoney(totalDebit)}</b><span>Total Billed</span></div><div><b>${fmtMoney(totalCredit)}</b><span>Total Paid</span></div><div><b style="color:${totalDebit-totalCredit>0?'var(--red)':'var(--green)'}">${fmtMoney(totalDebit-totalCredit)}</b><span>Balance</span></div></div>
+    <div class="page-actions no-print" style="margin-bottom:10px;">${can('fees')?`<button class="btn btn-gold btn-sm" id="addPaymentBtn">+ Add Payment</button>`:''} <button class="btn btn-outline btn-sm" id="printLedgerBtn">🖨 Print Ledger</button></div>
+    ${ledgerRows.length? `<div class="card"><div class="card-body" style="padding:0;overflow-x:auto;"><table><thead><tr><th>Date</th><th>Description</th><th>Debit</th><th>Credit</th><th>Balance</th></tr></thead>
+    <tbody>${ledgerRows.map(r=>`<tr><td>${fmtDate(r.date)}</td><td>${esc(r.desc)}</td><td>${r.debit?fmtMoney(r.debit):'—'}</td><td>${r.credit?fmtMoney(r.credit):'—'}</td><td><b>${fmtMoney(r.balance)}</b></td></tr>`).join('')}</tbody></table></div></div>`
+    : `<div class="empty-state"><div class="ic">📒</div><h4>No ledger entries yet</h4></div>`}`;
+  const apb = document.getElementById('addPaymentBtn'); if(apb) apb.onclick = ()=>openEntityModal('payments', null, {clientId:id});
+  document.getElementById('printLedgerBtn').onclick = ()=>printSection(`<h1>${esc(c.fullName)} — Client Ledger</h1><h2>Printed ${fmtDateTime(nowIso())}</h2><table><thead><tr><th>Date</th><th>Description</th><th>Debit</th><th>Credit</th><th>Balance</th></tr></thead><tbody>${ledgerRows.map(r=>`<tr><td>${fmtDate(r.date)}</td><td>${esc(r.desc)}</td><td>${r.debit?fmtMoney(r.debit):''}</td><td>${r.credit?fmtMoney(r.credit):''}</td><td>${fmtMoney(r.balance)}</td></tr>`).join('')}</tbody></table>`, c.fullName+' Ledger');
+}
+function caseRefText(id){ const c=CACHE.cases.find(x=>x.id===id); return c? c.caseNumber : '—'; }
+
+/* Client list view uses generic engine but opens custom detail page */
+function renderClientsView(){
+  renderListView('clients', {onEdit:(id)=>openEntityModal('clients', id)});
+  document.querySelectorAll('#view-clients [data-open="clients"]').forEach(b=> b.onclick = ()=> navigateTo('clients', b.dataset.id));
+}
+
+/* ---------------------------------------------------------------------
+   10. HEARINGS LIST + CALENDAR
+   --------------------------------------------------------------------- */
+function renderHearingsView(){
+  const container = document.getElementById('view-hearings');
+  renderListView('hearings', {title:'Hearings', subtitle:'All scheduled and past hearings'});
+  // patch case column links + add "Calendar View" button
+  const head = container.querySelector('.page-actions');
+  if(head && !head.querySelector('[data-calbtn]')){
+    const b = document.createElement('button'); b.className='btn btn-outline btn-sm'; b.setAttribute('data-calbtn','1'); b.textContent='📆 Calendar View';
+    b.onclick = ()=>navigateTo('calendar');
+    head.prepend(b);
+  }
+  container.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>navigateTo('caseDetail', b.dataset.id));
+}
+
+let CAL_STATE = {year:new Date().getFullYear(), month:new Date().getMonth()};
+function renderCalendarView(){
+  const container = document.getElementById('view-calendar');
+  const {year, month} = CAL_STATE;
+  const first = new Date(year, month, 1);
+  const startDow = first.getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+  const monthName = first.toLocaleDateString('en-GB',{month:'long', year:'numeric'});
+  const hearingsByDate = {};
+  CACHE.hearings.forEach(h=>{ if(!h.hearingDate) return; (hearingsByDate[h.hearingDate]=hearingsByDate[h.hearingDate]||[]).push(h); });
+
+  let cells = '';
+  for(let i=startDow-1;i>=0;i--) cells += calCell(daysInPrevMonth-i, true, null, []);
+  for(let d=1; d<=daysInMonth; d++){
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    cells += calCell(d, false, dateStr, hearingsByDate[dateStr]||[]);
+  }
+  const totalCells = startDow + daysInMonth;
+  const trailing = (7 - (totalCells % 7)) % 7;
+  for(let d=1; d<=trailing; d++) cells += calCell(d, true, null, []);
+
+  container.innerHTML = `
+    <div class="page-head"><div><h2>Hearing Calendar</h2><p>Month, view your scheduled hearings at a glance</p></div>
+    <div class="page-actions"><button class="btn btn-outline btn-sm" data-nav="hearings">☰ List View</button></div></div>
+    <div class="card"><div class="card-body">
+      <div class="cal-nav">
+        <button class="btn btn-outline btn-icon btn-sm" id="calPrev">←</button>
+        <b>${monthName}</b>
+        <button class="btn btn-outline btn-icon btn-sm" id="calNext">→</button>
+        <button class="btn btn-outline btn-sm" id="calToday" style="margin-left:8px;">Today</button>
+      </div>
+      <div class="cal-grid">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="cal-dow">${d}</div>`).join('')}${cells}</div>
+    </div></div>`;
+  container.querySelector('[data-nav="hearings"]').onclick = ()=>navigateTo('hearings');
+  container.querySelector('#calPrev').onclick = ()=>{ CAL_STATE.month--; if(CAL_STATE.month<0){CAL_STATE.month=11; CAL_STATE.year--;} renderCalendarView(); };
+  container.querySelector('#calNext').onclick = ()=>{ CAL_STATE.month++; if(CAL_STATE.month>11){CAL_STATE.month=0; CAL_STATE.year++;} renderCalendarView(); };
+  container.querySelector('#calToday').onclick = ()=>{ CAL_STATE.year=new Date().getFullYear(); CAL_STATE.month=new Date().getMonth(); renderCalendarView(); };
+  container.querySelectorAll('[data-hid]').forEach(b=> b.onclick = ()=>{ const h = CACHE.hearings.find(x=>x.id===b.dataset.hid); if(h) navigateTo('caseDetail', h.caseId); });
+}
+function calCell(num, other, dateStr, hearings){
+  const isToday = dateStr===todayStr();
+  return `<div class="cal-cell ${other?'otherm':''} ${isToday?'today':''}">
+    <div class="cal-daynum">${num}</div>
+    ${hearings.slice(0,3).map(h=>`<div class="cal-ev ${h.status==='Completed'?'done':(h.hearingType==='Bail'?'urgent':'')}" data-hid="${h.id}" title="${esc(caseRefText(h.caseId))}">${esc(h.hearingTime||'')} ${esc(caseRefText(h.caseId))}</div>`).join('')}
+    ${hearings.length>3? `<div style="font-size:9.5px;color:var(--text-2);">+${hearings.length-3} more</div>` : ''}
+  </div>`;
+}
+
+/* ---------------------------------------------------------------------
+   11. DASHBOARD
+   --------------------------------------------------------------------- */
+let DASH_CHARTS = {};
+function destroyDashCharts(){ Object.values(DASH_CHARTS).forEach(c=>c&&c.destroy()); DASH_CHARTS={}; }
+
+function renderDashboard(){
+  document.getElementById('dashDateLine').textContent =
+    `${new Date().toLocaleDateString('en-GB',{weekday:'long', day:'2-digit', month:'long', year:'numeric'})} · Welcome back, ${SESSION.fullName}`;
+
+  document.getElementById('quickActions').innerHTML = [
+    {ic:'👤', label:'New Client', act:()=>openEntityModal('clients'), perm:'clients'},
+    {ic:'⚖️', label:'New Case', act:()=>openCaseModal(), perm:'cases'},
+    {ic:'📅', label:'New Hearing', act:()=>openEntityModal('hearings'), perm:'hearings'},
+    {ic:'💳', label:'Add Payment', act:()=>openEntityModal('payments'), perm:'fees'},
+    {ic:'🧾', label:'Add Expense', act:()=>openEntityModal('expenses'), perm:'expenses'},
+    {ic:'✅', label:'Add Task', act:()=>openEntityModal('tasks'), perm:'tasks'},
+    {ic:'📄', label:'Upload Document', act:()=>openEntityModal('documents'), perm:'documents'},
+  ].filter(x=>can(x.perm)).map((x,i)=>`<div class="qa-btn" data-qa="${i}"><div class="ic">${x.ic}</div><span>${x.label}</span></div>`).join('');
+  const qaActs = [
+    ()=>openEntityModal('clients'), ()=>openCaseModal(), ()=>openEntityModal('hearings'),
+    ()=>openEntityModal('payments'), ()=>openEntityModal('expenses'), ()=>openEntityModal('tasks'), ()=>openEntityModal('documents')
+  ].filter((_,i)=>can(['clients','cases','hearings','fees','expenses','tasks','documents'][i]));
+  document.querySelectorAll('[data-qa]').forEach((el,i)=> el.onclick = qaActs[i]);
+
+  const cases = CACHE.cases;
+  const activeSet = ['New','Active','Pending','Under Trial','Decision Pending'];
+  const totalCases = cases.length, active = cases.filter(c=>activeSet.includes(c.status)).length;
+  const pending = cases.filter(c=>c.status==='Pending').length, won = cases.filter(c=>c.status==='Won').length;
+  const lost = cases.filter(c=>c.status==='Lost').length, closed = cases.filter(c=>['Closed','Settled','Withdrawn'].includes(c.status)).length;
+
+  document.getElementById('kpiCases').innerHTML = [
+    ['📁','Total Cases',totalCases,'b-navy'],['🟢','Active Cases',active,'b-green'],['🟡','Pending Cases',pending,'b-amber'],
+    ['🏆','Won Cases',won,'b-green'],['❌','Lost Cases',lost,'b-red'],['🔒','Closed Cases',closed,'b-gray']
+  ].map(k=>kpiCard(k[0],k[1],k[2],k[3])).join('');
+
+  const clients = CACHE.clients;
+  const monthStart = todayStr().slice(0,7);
+  const newClientsMonth = clients.filter(c=>(c.registrationDate||'').startsWith(monthStart)).length;
+  const todayH = CACHE.hearings.filter(h=>h.hearingDate===todayStr());
+  const tomorrow = new Date(Date.now()+86400000).toISOString().slice(0,10);
+  const tmrH = CACHE.hearings.filter(h=>h.hearingDate===tomorrow);
+  const weekEnd = new Date(Date.now()+7*86400000).toISOString().slice(0,10);
+  const weekH = CACHE.hearings.filter(h=>h.hearingDate>=todayStr() && h.hearingDate<=weekEnd);
+  const totalFees = CACHE.fees.reduce((s,f)=>s+(Number(f.amount)||0),0);
+  const totalReceived = CACHE.fees.reduce((s,f)=>s+(Number(f.receivedAmount)||0),0);
+  const feesThisMonth = CACHE.payments.filter(p=>(p.date||'').startsWith(monthStart)).reduce((s,p)=>s+(Number(p.amount)||0),0);
+  const expThisMonth = CACHE.expenses.filter(e=>(e.date||'').startsWith(monthStart)).reduce((s,e)=>s+(Number(e.amount)||0),0);
+
+  document.getElementById('kpiOther').innerHTML = [
+    ['👥','Total Clients',clients.length,'b-blue'], ['🟢','Active Clients',clients.filter(c=>c.status==='Active').length,'b-green'], ['✨','New Clients (Month)',newClientsMonth,'b-navy'],
+    ['📅','Todays Hearings',todayH.length,'b-amber'], ['📆','Tomorrows Hearings',tmrH.length,'b-blue'], ['🗓️','This Week',weekH.length,'b-navy'],
+    ['💰','Receivable Fees',fmtMoney(totalFees-totalReceived),'b-red'], ['✅','Received (Month)',fmtMoney(feesThisMonth),'b-green'], ['📉','Net Income (Month)',fmtMoney(feesThisMonth-expThisMonth),'b-navy'],
+  ].map(k=>kpiCard(k[0],k[1],k[2],k[3])).join('');
+
+  // Today's hearings box
+  document.getElementById('todayHearingsBox').innerHTML = todayH.length? todayH.map(h=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer;" data-hcard="${h.caseId}">
+      <div><b style="font-size:13px;">${esc(caseRefText(h.caseId))}</b><br><small style="color:var(--text-2)">${esc(h.court||'')} · ${esc(h.hearingType||'')} · ${esc(h.hearingTime||'')}</small></div>
+      ${badge(h.status)}
+    </div>`).join('') : `<div class="empty-state" style="padding:20px;"><div class="ic">📅</div><p>No hearings scheduled for today.</p></div>`;
+  document.querySelectorAll('[data-hcard]').forEach(el=> el.onclick = ()=>navigateTo('caseDetail', el.dataset.hcard));
+
+  // Tasks + important dates box
+  const myTasks = CACHE.tasks.filter(t=>t.status!=='Completed' && t.status!=='Cancelled').sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||'')).slice(0,6);
+  const upcomingDates = CACHE.importantDates.filter(d=>d.date>=todayStr()).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,4);
+  document.getElementById('taskDatesBox').innerHTML = `
+    ${myTasks.length? myTasks.map(t=>{ const overdue = t.dueDate<todayStr();
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+      <div><b style="font-size:13px;">${esc(t.title)}</b><br><small style="color:${overdue?'var(--red)':'var(--text-2)'}">${overdue?'⚠ Overdue — ':''}Due ${fmtDate(t.dueDate)}</small></div>${priorityBadge(t.priority)}</div>`;}).join('')
+    : `<p style="color:var(--text-2);font-size:12.8px;padding:8px 0;">No pending tasks.</p>`}
+    ${upcomingDates.length? `<div style="margin-top:10px;font-size:11px;text-transform:uppercase;color:var(--text-2);letter-spacing:.5px;">Upcoming Important Dates</div>${upcomingDates.map(d=>`<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12.8px;"><span>${esc(d.title)}</span><b>${fmtDate(d.date)}</b></div>`).join('')}` : ''}`;
+
+  // Charts
+  destroyDashCharts();
+  const statusCounts = groupCount(cases,'status');
+  const courtCounts = groupCount(cases,'court');
+  const typeCounts = groupCount(cases,'caseType');
+  const months = lastNMonths(6);
+  const feesByMonth = months.map(m=> CACHE.payments.filter(p=>(p.date||'').startsWith(m)).reduce((s,p)=>s+(Number(p.amount)||0),0));
+  const expByMonth = months.map(m=> CACHE.expenses.filter(e=>(e.date||'').startsWith(m)).reduce((s,e)=>s+(Number(e.amount)||0),0));
+  const next14 = [...Array(14)].map((_,i)=> new Date(Date.now()+i*86400000).toISOString().slice(0,10));
+  const upcomingCounts = next14.map(d=> CACHE.hearings.filter(h=>h.hearingDate===d).length);
+
+  DASH_CHARTS.status = pieChart('chartCasesStatus', statusCounts);
+  DASH_CHARTS.court = barChart('chartCasesCourt', courtCounts);
+  DASH_CHARTS.type = pieChart('chartCasesType', typeCounts);
+  DASH_CHARTS.fees = lineChart('chartFees', months.map(m=>monthShort(m)), feesByMonth, '#1f9d55');
+  DASH_CHARTS.exp = lineChart('chartExpenses', months.map(m=>monthShort(m)), expByMonth, '#d8453a');
+  DASH_CHARTS.upcoming = barChart('chartUpcoming', next14.map(d=>d.slice(5)), '#2563a8', true, upcomingCounts);
+
+  document.getElementById('dashPrintBtn').onclick = ()=>printSection(`<h1>Dashboard Summary</h1><h2>${fmtDateTime(nowIso())}</h2>
+    <p><b>Total Cases:</b> ${totalCases} &nbsp; <b>Active:</b> ${active} &nbsp; <b>Won:</b> ${won} &nbsp; <b>Lost:</b> ${lost}</p>
+    <p><b>Total Clients:</b> ${clients.length} &nbsp; <b>Today's Hearings:</b> ${todayH.length}</p>
+    <p><b>Outstanding Fees:</b> ${fmtMoney(totalFees-totalReceived)} &nbsp; <b>Net Income (Month):</b> ${fmtMoney(feesThisMonth-expThisMonth)}</p>`, 'Dashboard Summary');
+}
+function kpiCard(ic,label,val,cls){
+  return `<div class="kpi-card"><div class="kpi-top"><div class="kpi-ic ${cls}" style="background:var(--bg)">${ic}</div></div><div class="kpi-val">${val}</div><div class="kpi-lbl">${label}</div></div>`;
+}
+function groupCount(arr, key){ const m={}; arr.forEach(x=>{ const k=x[key]||'Unspecified'; m[k]=(m[k]||0)+1; }); return m; }
+function lastNMonths(n){ const out=[]; const d=new Date(); for(let i=n-1;i>=0;i--){ const dt=new Date(d.getFullYear(), d.getMonth()-i, 1); out.push(dt.toISOString().slice(0,7)); } return out; }
+function monthShort(m){ const [y,mo]=m.split('-'); return new Date(y,mo-1,1).toLocaleDateString('en-GB',{month:'short'}); }
+
+const CHART_COLORS = ['#0f1f3d','#c8a24d','#2563a8','#1f9d55','#d8453a','#e0982c','#6b5b95','#3a86ff'];
+const CHARTS_AVAILABLE = typeof Chart !== 'undefined';
+function noChartFallback(canvasId){
+  const ctx = document.getElementById(canvasId); if(!ctx) return;
+  const wrap = ctx.closest('.chart-wrap');
+  if(wrap) wrap.innerHTML = '<div class="empty-state" style="padding:10px;"><div class="ic">📡</div><p style="font-size:11.5px;">Chart library unavailable offline.<br>Connect to the internet to view charts.</p></div>';
+}
+function pieChart(canvasId, dataObj){
+  if(!CHARTS_AVAILABLE){ noChartFallback(canvasId); return null; }
+  const ctx = document.getElementById(canvasId); if(!ctx) return null;
+  const labels = Object.keys(dataObj), data = Object.values(dataObj);
+  if(!labels.length){ return null; }
+  try{
+    return new Chart(ctx, {type:'doughnut', data:{labels, datasets:[{data, backgroundColor:CHART_COLORS, borderWidth:2, borderColor:'#fff'}]},
+      options:{plugins:{legend:{position:'bottom', labels:{boxWidth:10, font:{size:10.5}}}}, maintainAspectRatio:false}});
+  }catch(e){ return null; }
+}
+function barChart(canvasId, source, color, sourceIsLabelsArray){
+  if(!CHARTS_AVAILABLE){ noChartFallback(canvasId); return null; }
+  const ctx = document.getElementById(canvasId); if(!ctx) return null;
+  let labels, data;
+  if(sourceIsLabelsArray){ labels = source; data = arguments[4] || []; }
+  else { labels = Object.keys(source); data = Object.values(source); }
+  try{
+    return new Chart(ctx, {type:'bar', data:{labels, datasets:[{data, backgroundColor:color||'#c8a24d', borderRadius:5}]},
+      options:{plugins:{legend:{display:false}}, maintainAspectRatio:false, scales:{y:{beginAtZero:true, ticks:{precision:0}}, x:{ticks:{font:{size:9.5}}}}}});
+  }catch(e){ return null; }
+}
+function lineChart(canvasId, labels, data, color){
+  if(!CHARTS_AVAILABLE){ noChartFallback(canvasId); return null; }
+  const ctx = document.getElementById(canvasId); if(!ctx) return null;
+  try{
+    return new Chart(ctx, {type:'line', data:{labels, datasets:[{data, borderColor:color, backgroundColor:color+'22', fill:true, tension:.35, pointRadius:3}]},
+      options:{plugins:{legend:{display:false}}, maintainAspectRatio:false, scales:{y:{beginAtZero:true}}}});
+  }catch(e){ return null; }
+}
+
+/* ---------------------------------------------------------------------
+   12. FINANCE DASHBOARD
+   --------------------------------------------------------------------- */
+let FIN_RANGE = 'month';
+function financeRangeDates(){
+  const now = new Date(); let start;
+  if(FIN_RANGE==='today') start = todayStr();
+  else if(FIN_RANGE==='week'){ const d=new Date(now); d.setDate(d.getDate()-7); start = d.toISOString().slice(0,10); }
+  else if(FIN_RANGE==='month') start = todayStr().slice(0,7)+'-01';
+  else if(FIN_RANGE==='year') start = todayStr().slice(0,4)+'-01-01';
+  else start = '0000-01-01';
+  return start;
+}
+function renderFinanceView(){
+  const container = document.getElementById('view-finance');
+  const start = financeRangeDates();
+  const payments = CACHE.payments.filter(p=>p.date>=start);
+  const expenses = CACHE.expenses.filter(e=>e.date>=start);
+  const received = payments.reduce((s,p)=>s+(Number(p.amount)||0),0);
+  const expTotal = expenses.reduce((s,e)=>s+(Number(e.amount)||0),0);
+  const totalFees = CACHE.fees.reduce((s,f)=>s+(Number(f.amount)||0),0);
+  const totalRecvAll = CACHE.fees.reduce((s,f)=>s+(Number(f.receivedAmount)||0),0);
+
+  container.innerHTML = `
+    <div class="page-head"><div><h2>Finance Dashboard</h2><p>Fees, payments, expenses and net income overview</p></div>
+    <div class="page-actions"><button class="btn btn-outline btn-sm" id="finPrintBtn">🖨 Print</button></div></div>
+    <div class="toolbar">
+      ${['today','week','month','year','all'].map(r=>`<button class="btn ${FIN_RANGE===r?'btn-gold':'btn-outline'} btn-sm" data-range="${r}">${r.charAt(0).toUpperCase()+r.slice(1)}</button>`).join('')}
+    </div>
+    <div class="kpi-grid">
+      ${kpiCard('💰','Total Fees',fmtMoney(totalFees),'')}
+      ${kpiCard('✅','Received (all time)',fmtMoney(totalRecvAll),'')}
+      ${kpiCard('⏳','Outstanding Fees',fmtMoney(totalFees-totalRecvAll),'')}
+      ${kpiCard('📥','Received (period)',fmtMoney(received),'')}
+      ${kpiCard('📤','Expenses (period)',fmtMoney(expTotal),'')}
+      ${kpiCard('📊','Net Income (period)',fmtMoney(received-expTotal),'')}
+    </div>
+    <div class="grid-charts">
+      <div class="card"><div class="card-head"><h3>Monthly Income vs Expense</h3></div><div class="card-body chart-wrap"><canvas id="finChart1"></canvas></div></div>
+      <div class="card"><div class="card-head"><h3>Outstanding Fees by Client</h3></div><div class="card-body chart-wrap"><canvas id="finChart2"></canvas></div></div>
+      <div class="card"><div class="card-head"><h3>Income by Case</h3></div><div class="card-body chart-wrap"><canvas id="finChart3"></canvas></div></div>
+    </div>`;
+  container.querySelectorAll('[data-range]').forEach(b=> b.onclick = ()=>{ FIN_RANGE = b.dataset.range; renderFinanceView(); });
+  container.querySelector('#finPrintBtn').onclick = ()=>printSection(`<h1>Finance Summary</h1><h2>${FIN_RANGE} — Printed ${fmtDateTime(nowIso())}</h2>
+    <p><b>Received:</b> ${fmtMoney(received)} &nbsp; <b>Expenses:</b> ${fmtMoney(expTotal)} &nbsp; <b>Net:</b> ${fmtMoney(received-expTotal)}</p>`, 'Finance Summary');
+
+  destroyDashCharts2();
+  if(!CHARTS_AVAILABLE){ ['finChart1','finChart2','finChart3'].forEach(noChartFallback); return; }
+  const months = lastNMonths(6);
+  const inc = months.map(m=>CACHE.payments.filter(p=>(p.date||'').startsWith(m)).reduce((s,p)=>s+(Number(p.amount)||0),0));
+  const exp = months.map(m=>CACHE.expenses.filter(e=>(e.date||'').startsWith(m)).reduce((s,e)=>s+(Number(e.amount)||0),0));
+  try{
+  FIN_CHARTS.c1 = new Chart(document.getElementById('finChart1'), {type:'bar', data:{labels:months.map(monthShort), datasets:[
+    {label:'Income', data:inc, backgroundColor:'#1f9d55', borderRadius:4},{label:'Expense', data:exp, backgroundColor:'#d8453a', borderRadius:4}]},
+    options:{maintainAspectRatio:false, plugins:{legend:{position:'bottom', labels:{boxWidth:10,font:{size:10.5}}}}, scales:{y:{beginAtZero:true}}}});
+  const outstandingByClient = {};
+  CACHE.fees.forEach(f=>{ const out=(Number(f.amount)||0)-(Number(f.receivedAmount)||0); if(out>0){ const name = clientRefText(f.clientId)||'Unknown'; outstandingByClient[name]=(outstandingByClient[name]||0)+out; } });
+  const topOutstanding = Object.entries(outstandingByClient).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  FIN_CHARTS.c2 = new Chart(document.getElementById('finChart2'), {type:'bar', data:{labels:topOutstanding.map(x=>x[0]), datasets:[{data:topOutstanding.map(x=>x[1]), backgroundColor:'#e0982c', borderRadius:4}]},
+    options:{indexAxis:'y', maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{beginAtZero:true}}}});
+  const incomeByCase = {};
+  CACHE.payments.forEach(p=>{ if(p.caseId){ const name = caseRefText(p.caseId); incomeByCase[name]=(incomeByCase[name]||0)+(Number(p.amount)||0); } });
+  const topCases = Object.entries(incomeByCase).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  FIN_CHARTS.c3 = new Chart(document.getElementById('finChart3'), {type:'bar', data:{labels:topCases.map(x=>x[0]), datasets:[{data:topCases.map(x=>x[1]), backgroundColor:'#2563a8', borderRadius:4}]},
+    options:{indexAxis:'y', maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{beginAtZero:true}}}});
+  }catch(e){}
+}
+let FIN_CHARTS = {};
+function destroyDashCharts2(){ Object.values(FIN_CHARTS).forEach(c=>c&&c.destroy()); FIN_CHARTS={}; }
+
+/* ---------------------------------------------------------------------
+   13. REPORTS
+   --------------------------------------------------------------------- */
+const REPORT_DEFS = [
+  {key:'allCases', group:'Case Reports', label:'All Cases', run:()=>CACHE.cases, cols:['caseNumber','caseTitle','caseType','status','court','nextHearingDate']},
+  {key:'activeCases', group:'Case Reports', label:'Active Cases', run:()=>CACHE.cases.filter(c=>['New','Active','Pending','Under Trial','Decision Pending'].includes(c.status)), cols:['caseNumber','caseTitle','status','court','nextHearingDate']},
+  {key:'closedCases', group:'Case Reports', label:'Closed Cases', run:()=>CACHE.cases.filter(c=>['Closed','Won','Lost','Withdrawn','Settled'].includes(c.status)), cols:['caseNumber','caseTitle','status']},
+  {key:'casesByCourt', group:'Case Reports', label:'Cases by Court', run:()=>CACHE.cases, cols:['caseNumber','court','status'], groupBy:'court'},
+  {key:'casesByLawyer', group:'Case Reports', label:'Cases by Lawyer', run:()=>CACHE.cases, cols:['caseNumber','lawyerAssigned','status'], groupBy:'lawyerAssigned'},
+  {key:'casesByType', group:'Case Reports', label:'Cases by Type', run:()=>CACHE.cases, cols:['caseNumber','caseType','status'], groupBy:'caseType'},
+  {key:'casesByStatus', group:'Case Reports', label:'Cases by Status', run:()=>CACHE.cases, cols:['caseNumber','status'], groupBy:'status'},
+  {key:'todayHearings', group:'Hearing Reports', label:"Today's Hearings", run:()=>CACHE.hearings.filter(h=>h.hearingDate===todayStr()), cols:['hearingDate','hearingTime','caseId','court','status']},
+  {key:'upcomingHearings', group:'Hearing Reports', label:'Upcoming Hearings', run:()=>CACHE.hearings.filter(h=>h.hearingDate>=todayStr()), cols:['hearingDate','caseId','court','hearingType','status']},
+  {key:'completedHearings', group:'Hearing Reports', label:'Completed Hearings', run:()=>CACHE.hearings.filter(h=>h.status==='Completed'), cols:['hearingDate','caseId','result']},
+  {key:'adjournedHearings', group:'Hearing Reports', label:'Adjourned Hearings', run:()=>CACHE.hearings.filter(h=>h.status==='Adjourned'), cols:['hearingDate','caseId','nextDate']},
+  {key:'monthlyHearings', group:'Hearing Reports', label:'Monthly Hearing Report', run:()=>CACHE.hearings.filter(h=>(h.hearingDate||'').startsWith(todayStr().slice(0,7))), cols:['hearingDate','caseId','status']},
+  {key:'clientList', group:'Client Reports', label:'Client List', run:()=>CACHE.clients, cols:['fullName','phone','cnic','city','status']},
+  {key:'clientFinancial', group:'Client Reports', label:'Client Financial Statement', run:()=>CACHE.clients.map(c=>{
+      const fees=CACHE.fees.filter(f=>f.clientId===c.id); const bill=fees.reduce((s,f)=>s+(Number(f.amount)||0),0); const recv=fees.reduce((s,f)=>s+(Number(f.receivedAmount)||0),0);
+      return {fullName:c.fullName, billed:bill, received:recv, outstanding:bill-recv};
+    }), cols:['fullName','billed','received','outstanding']},
+  {key:'feesReceived', group:'Financial Reports', label:'Fees Received', run:()=>CACHE.payments, cols:['date','clientId','amount','method']},
+  {key:'outstandingFees', group:'Financial Reports', label:'Outstanding Fees', run:()=>CACHE.fees.filter(f=>f.paymentStatus!=='Paid'), cols:['clientId','feeType','amount','receivedAmount','paymentStatus']},
+  {key:'expensesReport', group:'Financial Reports', label:'Expenses', run:()=>CACHE.expenses, cols:['date','category','amount','caseId']},
+  {key:'incomeVsExpense', group:'Financial Reports', label:'Income vs Expense', run:()=>{
+      const months = lastNMonths(6); return months.map(m=>({month:monthShort(m), income:CACHE.payments.filter(p=>(p.date||'').startsWith(m)).reduce((s,p)=>s+(Number(p.amount)||0),0), expense:CACHE.expenses.filter(e=>(e.date||'').startsWith(m)).reduce((s,e)=>s+(Number(e.amount)||0),0)}));
+    }, cols:['month','income','expense']},
+  {key:'caseProfitability', group:'Financial Reports', label:'Case-wise Profitability', run:()=>CACHE.cases.map(c=>{
+      const recv = CACHE.payments.filter(p=>p.caseId===c.id).reduce((s,p)=>s+(Number(p.amount)||0),0);
+      const exp = CACHE.expenses.filter(e=>e.caseId===c.id).reduce((s,e)=>s+(Number(e.amount)||0),0);
+      return {caseNumber:c.caseNumber, income:recv, expense:exp, profit:recv-exp};
+    }), cols:['caseNumber','income','expense','profit']},
+];
+let REPORT_DATE_FROM='', REPORT_DATE_TO='';
+function renderReportsView(){
+  const container = document.getElementById('view-reports');
+  const groups = [...new Set(REPORT_DEFS.map(r=>r.group))];
+  container.innerHTML = `
+    <div class="page-head"><div><h2>Reports</h2><p>Generate, filter, print and export reports</p></div></div>
+    <div class="grid-2">
+      <div>
+        ${groups.map(g=>`<div class="card"><div class="card-head"><h3>${esc(g)}</h3></div><div class="card-body" style="display:flex;flex-wrap:wrap;gap:8px;">
+          ${REPORT_DEFS.filter(r=>r.group===g).map(r=>`<button class="btn btn-outline btn-sm" data-report="${r.key}">${esc(r.label)}</button>`).join('')}
+        </div></div>`).join('')}
+      </div>
+      <div>
+        <div class="card"><div class="card-head"><h3 id="reportTitle">Select a report</h3></div>
+          <div class="card-body">
+            <div class="toolbar" style="margin-bottom:10px;">
+              <input type="date" id="repFrom"> <span style="color:var(--text-2);font-size:12px;">to</span> <input type="date" id="repTo">
+              <div class="spacer"></div>
+              <button class="btn btn-outline btn-sm" id="repExportBtn">⬇ CSV</button>
+              <button class="btn btn-outline btn-sm" id="repPrintBtn">🖨 Print</button>
+            </div>
+            <div id="reportResultBox"><div class="empty-state"><div class="ic">📊</div><h4>Choose a report on the left</h4><p>Results will appear here with print and export options.</p></div></div>
+          </div></div>
+      </div>
+    </div>`;
+  let currentReport = null;
+  const runReport = ()=>{
+    if(!currentReport) return;
+    let rows = currentReport.run();
+    const dateKey = currentReport.cols.find(c=>['date','hearingDate','dueDate'].includes(c));
+    const from = document.getElementById('repFrom').value, to = document.getElementById('repTo').value;
+    if(dateKey && (from||to)) rows = rows.filter(r=> (!from || (r[dateKey]||'')>=from) && (!to || (r[dateKey]||'')<=to));
+    document.getElementById('reportTitle').textContent = currentReport.label;
+    const displayRows = rows.map(r=>{
+      const o = {}; currentReport.cols.forEach(c=>{
+        let v = r[c];
+        if(c==='caseId') v = caseRefText(v); if(c==='clientId') v = clientRefText(v);
+        if(['amount','billed','received','outstanding','income','expense','profit','receivedAmount'].includes(c)) v = fmtMoney(v);
+        if(['date','hearingDate','dueDate','nextDate'].includes(c)) v = fmtDate(v);
+        o[c]=v;
+      }); return o;
+    });
+    document.getElementById('reportResultBox').innerHTML = displayRows.length? `<div style="overflow-x:auto;"><table><thead><tr>${currentReport.cols.map(c=>`<th>${colLabel(c)}</th>`).join('')}</tr></thead>
+      <tbody>${displayRows.map(r=>`<tr>${currentReport.cols.map(c=>`<td>${esc(r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table></div><p style="font-size:11.5px;color:var(--text-2);margin-top:8px;">${rows.length} record(s)</p>`
+      : `<div class="empty-state"><div class="ic">📭</div><h4>No matching records</h4></div>`;
+    container.querySelector('#repExportBtn').onclick = ()=>csvExport(currentReport.key+'.csv', displayRows, currentReport.cols);
+    container.querySelector('#repPrintBtn').onclick = ()=>printSection(`<h1>${esc(currentReport.label)}</h1><h2>Printed ${fmtDateTime(nowIso())}</h2><table><thead><tr>${currentReport.cols.map(c=>`<th>${colLabel(c)}</th>`).join('')}</tr></thead><tbody>${displayRows.map(r=>`<tr>${currentReport.cols.map(c=>`<td>${esc(r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table>`, currentReport.label);
+  };
+  container.querySelectorAll('[data-report]').forEach(b=> b.onclick = ()=>{ currentReport = REPORT_DEFS.find(r=>r.key===b.dataset.report); runReport(); });
+  container.querySelector('#repFrom').addEventListener('change', runReport);
+  container.querySelector('#repTo').addEventListener('change', runReport);
+}
+function colLabel(c){ return c.replace(/([A-Z])/g,' $1').replace(/^./, s=>s.toUpperCase()); }
+
+/* ---------------------------------------------------------------------
+   14. NOTIFICATIONS CENTER
+   --------------------------------------------------------------------- */
+function computeNotifications(){
+  const out = [];
+  const todayH = CACHE.hearings.filter(h=>h.hearingDate===todayStr());
+  todayH.forEach(h=> out.push({ic:'📅', cls:'b-amber', title:`Hearing today — ${caseRefText(h.caseId)}`, desc:`${h.court||''} · ${h.hearingTime||''}`, date:h.hearingDate, nav:['caseDetail', h.caseId]}));
+  const tomorrow = new Date(Date.now()+86400000).toISOString().slice(0,10);
+  CACHE.hearings.filter(h=>h.hearingDate===tomorrow).forEach(h=> out.push({ic:'📆', cls:'b-blue', title:`Hearing tomorrow — ${caseRefText(h.caseId)}`, desc:`${h.court||''}`, date:h.hearingDate, nav:['caseDetail', h.caseId]}));
+  CACHE.tasks.filter(t=>t.status!=='Completed' && t.status!=='Cancelled' && t.dueDate<todayStr()).forEach(t=> out.push({ic:'⚠️', cls:'b-red', title:`Overdue task — ${t.title}`, desc:`Was due ${fmtDate(t.dueDate)}`, date:t.dueDate, nav:['tasks']}));
+  CACHE.importantDates.filter(d=>d.date>=todayStr() && d.date<=new Date(Date.now()+7*86400000).toISOString().slice(0,10)).forEach(d=> out.push({ic:'🔔', cls:'b-navy', title:`Upcoming: ${d.title}`, desc:`${d.type} — ${fmtDate(d.date)}`, date:d.date, nav:['importantDates']}));
+  CACHE.fees.filter(f=>f.paymentStatus!=='Paid').forEach(f=>{ const out2=(Number(f.amount)||0)-(Number(f.receivedAmount)||0); if(out2>0) out.push({ic:'💰', cls:'b-red', title:`Outstanding fee — ${clientRefText(f.clientId)}`, desc:fmtMoney(out2), date:f.dueDate||'', nav:['fees']}); });
+  return out.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+}
+function renderNotificationsView(){
+  const container = document.getElementById('view-notifications');
+  const notifs = computeNotifications();
+  container.innerHTML = `<div class="page-head"><div><h2>Notification Center</h2><p>Hearings, deadlines, overdue tasks and outstanding fees</p></div></div>
+  <div class="card">${notifs.length? notifs.map(n=>`<div class="notif-item" data-nv='${JSON.stringify(n.nav)}'><div class="notif-ic ${n.cls}" style="background:var(--bg)">${n.ic}</div><div><b>${esc(n.title)}</b><p>${esc(n.desc)}</p><small>${fmtDate(n.date)}</small></div></div>`).join('')
+    : `<div class="empty-state"><div class="ic">🔔</div><h4>You're all caught up</h4><p>No pending notifications.</p></div>`}</div>`;
+  container.querySelectorAll('[data-nv]').forEach(el=> el.onclick = ()=>{ const nv = JSON.parse(el.dataset.nv); navigateTo(nv[0], nv[1]); });
+}
+function updateNotifBadge(){
+  const n = computeNotifications().length;
+  document.getElementById('notifDot').style.display = n>0? 'block':'none';
+}
+
+/* ---------------------------------------------------------------------
+   15. SETTINGS
+   --------------------------------------------------------------------- */
+let SETTINGS_TAB = 'firm';
+async function getSettings(){
+  const s = await dbGet('settings','app');
+  return s || {key:'app', firmName:'Your Law Firm', advocateName:SESSION?SESSION.fullName:'', address:'', phone:'', email:'', darkMode:false, currency:'PKR'};
+}
+async function renderSettingsView(){
+  const container = document.getElementById('view-settings');
+  const s = await getSettings();
+  const tabs = [['firm','Firm Profile'],['appearance','Appearance'],['users','Users'],['caseSettings','Case Settings'],['financial','Financial'],['backup','Backup']];
+  container.innerHTML = `<div class="page-head"><div><h2>Settings</h2><p>Configure your firm profile, users, and application preferences</p></div></div>
+    <div class="settings-tabs">${tabs.map(t=>`<div class="settings-tab ${SETTINGS_TAB===t[0]?'active':''}" data-stab="${t[0]}">${t[1]}</div>`).join('')}</div>
+    <div id="settingsBody"></div>`;
+  container.querySelectorAll('[data-stab]').forEach(b=> b.onclick = ()=>{ SETTINGS_TAB=b.dataset.stab; renderSettingsView(); });
+  const body = document.getElementById('settingsBody');
+
+  if(SETTINGS_TAB==='firm'){
+    const ff = [{key:'firmName',label:'Firm Name',type:'text',required:true,col:2},{key:'advocateName',label:'Advocate Name',type:'text'},
+      {key:'phone',label:'Phone',type:'text'},{key:'email',label:'Email',type:'email'},{key:'address',label:'Address',type:'textarea',col:2},{key:'logoNote',label:'Logo Reference (path/filename)',type:'text',col:2}];
+    body.innerHTML = `<div class="card"><div class="card-head"><h3>Law Firm Profile</h3></div><div class="card-body"><div class="form-grid">${ff.map(f=>renderFieldHtml(f,s[f.key])).join('')}</div>
+      <div style="text-align:right;margin-top:14px;"><button class="btn btn-primary btn-sm" id="saveFirmBtn">Save Changes</button></div></div></div>`;
+    document.getElementById('saveFirmBtn').onclick = async ()=>{ ff.forEach(f=> s[f.key]=readFieldValue(f)); await dbPut('settings', s); toast('Firm profile saved.','success'); };
+  }
+  else if(SETTINGS_TAB==='appearance'){
+    body.innerHTML = `<div class="card"><div class="card-head"><h3>Appearance</h3></div><div class="card-body">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+        <div><b style="font-size:13px;">Dark Mode</b><p style="font-size:12px;color:var(--text-2);">Switch between light and dark interface theme</p></div>
+        <label class="switch"><input type="checkbox" id="darkModeToggle" ${document.body.classList.contains('dark')?'checked':''}><span class="slider"></span></label>
+      </div></div></div>`;
+    document.getElementById('darkModeToggle').onchange = async (e)=>{ document.body.classList.toggle('dark', e.target.checked); s.darkMode=e.target.checked; await dbPut('settings', s); };
+  }
+  else if(SETTINGS_TAB==='users'){
+    const users = CACHE.users;
+    body.innerHTML = `<div class="card"><div class="card-head"><h3>Users &amp; Staff</h3><span class="link" id="addUserLink">+ Add User</span></div><div class="card-body" style="padding:0;">
+      <table><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Status</th><th></th></tr></thead>
+      <tbody>${users.map(u=>`<tr><td>${esc(u.fullName)}</td><td>${esc(u.username)}</td><td>${badge(u.role)}</td><td>${badge(u.status)}</td>
+        <td style="text-align:right;"><button class="btn btn-outline btn-icon btn-sm" data-eu="${u.id}">✎</button> ${u.id!==SESSION.userId?`<button class="btn btn-outline btn-sm" data-tu="${u.id}">${u.status==='Active'?'Disable':'Enable'}</button>`:''}</td></tr>`).join('')}</tbody></table>
+    </div></div>`;
+    document.getElementById('addUserLink').onclick = ()=>openUserModal();
+    body.querySelectorAll('[data-eu]').forEach(b=> b.onclick = ()=>openUserModal(b.dataset.eu));
+    body.querySelectorAll('[data-tu]').forEach(b=> b.onclick = async ()=>{ const u = await dbGet('users', b.dataset.tu); u.status = u.status==='Active'?'Disabled':'Active'; await dbPut('users', u); await refreshCache(['users']); renderSettingsView(); });
+  }
+  else if(SETTINGS_TAB==='caseSettings'){
+    body.innerHTML = `<div class="card"><div class="card-head"><h3>Case Types</h3></div><div class="card-body">${OPT.caseType.map(t=>`<span class="badge b-navy" style="margin:3px;">${esc(t)}</span>`).join('')}</div></div>
+    <div class="card"><div class="card-head"><h3>Case Statuses</h3></div><div class="card-body">${OPT.caseStatus.map(t=>`<span class="badge ${badgeForStatus(t)}" style="margin:3px;">${esc(t)}</span>`).join('')}</div></div>
+    <div class="card"><div class="card-head"><h3>Hearing Types</h3></div><div class="card-body">${OPT.hearingType.map(t=>`<span class="badge b-blue" style="margin:3px;">${esc(t)}</span>`).join('')}</div></div>
+    <p style="font-size:11.5px;color:var(--text-2);">These lists are standardized across the system for consistent reporting.</p>`;
+  }
+  else if(SETTINGS_TAB==='financial'){
+    body.innerHTML = `<div class="card"><div class="card-head"><h3>Financial Settings</h3></div><div class="card-body">
+      <div class="form-grid"><div class="field"><label>Currency</label><select id="currencySel"><option value="PKR" selected>PKR — Pakistani Rupee</option></select></div>
+      <div class="field"><label>Default Payment Method</label><select id="defMethod">${OPT.paymentMethod.map(m=>`<option>${esc(m)}</option>`).join('')}</select></div></div>
+      <div style="text-align:right;margin-top:14px;"><button class="btn btn-primary btn-sm" id="saveFinBtn">Save</button></div></div></div>`;
+    document.getElementById('saveFinBtn').onclick = ()=> toast('Financial settings saved.','success');
+  }
+  else if(SETTINGS_TAB==='backup'){ navigateTo('backup'); }
+}
+async function openUserModal(id){
+  const rec = id? await dbGet('users', id) : {status:'Active', role:'assistant'};
+  const uf = [{key:'fullName',label:'Full Name',type:'text',required:true},{key:'username',label:'Username',type:'text',required:true},
+    {key:'password',label:'Password',type:'text',required:!id, placeholder: id?'Leave blank to keep current':''},
+    {key:'role',label:'Role',type:'select',options:['admin','lawyer','assistant','accountant']},{key:'status',label:'Status',type:'select',options:['Active','Disabled']}];
+  openModal(`<div class="modal-head"><h3>${id?'Edit User':'Add User'}</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body"><div class="form-grid">${uf.map(f=>renderFieldHtml(f, rec[f.key])).join('')}</div></div>
+    <div class="modal-foot"><button class="btn btn-outline btn-sm" onclick="closeModal()">Cancel</button><button class="btn btn-primary btn-sm" id="saveUserBtn">Save</button></div>`);
+  document.getElementById('saveUserBtn').onclick = async ()=>{
+    const reqFields = uf.filter(f=>f.key!=='password' || !id);
+    if(!validateFields(reqFields)) return;
+    const out = id? Object.assign({}, rec) : {id:uid('USR'), createdAt:nowIso()};
+    uf.forEach(f=>{ const v = readFieldValue(f); if(f.key==='password'){ if(v) out.password=v; } else out[f.key]=v; });
+    await dbPut('users', out); await refreshCache(['users']);
+    toast(`User ${id?'updated':'added'}.`,'success'); closeModal(); renderSettingsView();
+  };
+}
+
+/* ---------------------------------------------------------------------
+   16. BACKUP / RESTORE — Excel (.xlsx) workbook, one sheet per module.
+   Human-readable in Excel/Numbers/Google Sheets, and fully re-importable.
+   --------------------------------------------------------------------- */
+const XLSX_AVAILABLE = typeof XLSX !== 'undefined';
+const SHEET_LABELS = {
+  clients:'Clients', cases:'Cases', caseParties:'Opposite Parties', courts:'Courts', hearings:'Hearings',
+  documents:'Documents', tasks:'Tasks', importantDates:'Important Dates', fees:'Fees', payments:'Payments',
+  expenses:'Expenses', notes:'Notes', settings:'Settings', auditLogs:'Audit Log', users:'Users'
+};
+async function renderBackupView(){
+  const container = document.getElementById('view-backup');
+  const counts = {};
+  for(const s of STORES) counts[s] = (CACHE[s]||(await dbAll(s))).length;
+  container.innerHTML = `
+    <div class="page-head"><div><h2>Backup &amp; Restore</h2><p>Export or import your complete application database as an Excel workbook</p></div></div>
+    <div class="grid-2">
+      <div class="card"><div class="card-head"><h3>Backup Database</h3></div><div class="card-body">
+        <p style="font-size:12.8px;color:var(--text-2);margin-bottom:14px;">Exports all clients, cases, hearings, documents, fees, payments, expenses, tasks and settings into a single Excel (.xlsx) workbook — one neatly labeled sheet per module, which you can open, review or print directly in Excel.</p>
+        <button class="btn btn-gold btn-sm" id="doBackupBtn">⬇ Export Backup (Excel)</button>
+        ${!XLSX_AVAILABLE? `<p style="font-size:11px;color:var(--red);margin-top:10px;">Excel export library not loaded — connect to the internet once to enable this.</p>`:''}
+      </div></div>
+      <div class="card"><div class="card-head"><h3>Restore Database</h3></div><div class="card-body">
+        <p style="font-size:12.8px;color:var(--red);margin-bottom:14px;">⚠ Restoring a backup will replace current application data. This cannot be undone.</p>
+        <input type="file" id="restoreFile" accept=".xlsx" style="margin-bottom:10px;">
+        <br><button class="btn btn-outline btn-sm" id="doRestoreBtn">⬆ Restore from Excel File</button>
+      </div></div>
+    </div>
+    <div class="card"><div class="card-head"><h3>Database Information</h3></div><div class="card-body">
+      <table><tbody>${STORES.map(s=>`<tr><td style="color:var(--text-2)">${SHEET_LABELS[s]||s}</td><td><b>${counts[s]}</b> record(s)</td></tr>`).join('')}</tbody></table>
+      <p style="font-size:11.5px;color:var(--text-2);margin-top:10px;">Database version: ${DB_VERSION} · LexOffice v1.0</p>
+    </div></div>
+    <div class="card"><div class="card-head"><h3>Demo / Sample Data</h3></div><div class="card-body">
+      <p style="font-size:12.8px;color:var(--text-2);margin-bottom:12px;">This installation may contain sample demo data (clients, cases, hearings, payments) for evaluation. Clear it before real production use.</p>
+      <button class="btn btn-danger btn-sm" id="clearDemoBtn">🗑 Clear Demo Data</button>
+    </div></div>`;
+  const cdb = document.getElementById('clearDemoBtn'); if(cdb) cdb.onclick = clearDemoData;
+
+  document.getElementById('doBackupBtn').onclick = async ()=>{
+    if(!XLSX_AVAILABLE){ toast('Excel library unavailable offline. Connect to the internet once and try again.','error'); return; }
+    const wb = XLSX.utils.book_new();
+    for(const s of STORES){
+      const rows = await dbAll(s);
+      const sheet = rows.length ? XLSX.utils.json_to_sheet(rows) : XLSX.utils.aoa_to_sheet([['(no records)']]);
+      XLSX.utils.book_append_sheet(wb, sheet, (SHEET_LABELS[s]||s).slice(0,31));
+    }
+    const metaSheet = XLSX.utils.aoa_to_sheet([['App','LexOffice'],['Backup Date', nowIso()],['DB Version', DB_VERSION]]);
+    XLSX.utils.book_append_sheet(wb, metaSheet, 'Backup Info');
+    XLSX.writeFile(wb, `lexoffice-backup-${todayStr()}.xlsx`);
+    await logAudit('Backup Exported', 'System', todayStr());
+    toast('Backup exported successfully as Excel file.','success');
+  };
+
+  document.getElementById('doRestoreBtn').onclick = async ()=>{
+    if(!XLSX_AVAILABLE){ toast('Excel library unavailable offline. Connect to the internet once and try again.','error'); return; }
+    const file = document.getElementById('restoreFile').files[0];
+    if(!file){ toast('Please choose a backup Excel (.xlsx) file first.','error'); return; }
+    const ok = await confirmDialog('Restore Backup?', 'Warning: Restoring a backup will replace current application data. Continue?', {okText:'Restore & Replace'});
+    if(!ok) return;
+    try{
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, {type:'array'});
+      const labelToStore = {}; STORES.forEach(s=> labelToStore[(SHEET_LABELS[s]||s).slice(0,31)] = s);
+      let matchedAny = false;
+      const parsedData = {};
+      for(const sheetName of wb.SheetNames){
+        const store = labelToStore[sheetName];
+        if(!store) continue;
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {defval:''});
+        parsedData[store] = rows.filter(r=> r.id || r.key); // skip the "(no records)" placeholder row
+        matchedAny = true;
+      }
+      if(!matchedAny){ toast('This file does not look like a LexOffice backup workbook.','error'); return; }
+      for(const s of STORES){ await dbClearStore(s); const rows = parsedData[s]||[]; for(const r of rows) await dbPut(s, r); }
+      await refreshCache();
+      await logAudit('Backup Restored', 'System', file.name);
+      toast('Database restored successfully from Excel file.','success');
+      renderBackupView();
+    }catch(err){ toast('Failed to restore: invalid or corrupted Excel file.','error'); }
+  };
+}
+
+/* ---------------------------------------------------------------------
+   17. AUDIT LOG
+   --------------------------------------------------------------------- */
+function renderAuditView(){
+  const container = document.getElementById('view-audit');
+  const logs = CACHE.auditLogs.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,300);
+  container.innerHTML = `<div class="page-head"><div><h2>Audit Log</h2><p>Recent activity across the application</p></div></div>
+  <div class="card"><div class="card-body" style="padding:0;overflow-x:auto;">
+  ${logs.length? `<table><thead><tr><th>Date/Time</th><th>User</th><th>Action</th><th>Entity</th><th>Detail</th></tr></thead>
+  <tbody>${logs.map(l=>`<tr><td>${fmtDateTime(l.date)}</td><td>${esc(l.user)}</td><td>${esc(l.action)}</td><td>${esc(l.entity)}</td><td>${esc(l.detail)}</td></tr>`).join('')}</tbody></table>`
+  : `<div class="empty-state"><div class="ic">🗒</div><h4>No activity recorded yet</h4></div>`}</div></div>`;
+}
+
+/* ---------------------------------------------------------------------
+   18. GLOBAL SEARCH
+   --------------------------------------------------------------------- */
+function runGlobalSearch(q){
+  q = q.trim().toLowerCase();
+  const box = document.getElementById('searchResults');
+  if(!q){ box.style.display='none'; return; }
+  const clientMatches = CACHE.clients.filter(c=>[c.fullName,c.cnic,c.phone,c.email].some(v=>String(v||'').toLowerCase().includes(q))).slice(0,5);
+  const caseMatches = CACHE.cases.filter(c=>[c.caseNumber,c.caseTitle,c.opposingParty].some(v=>String(v||'').toLowerCase().includes(q))).slice(0,5);
+  const courtMatches = CACHE.courts.filter(c=>String(c.courtName||'').toLowerCase().includes(q)).slice(0,3);
+  const docMatches = CACHE.documents.filter(d=>String(d.title||'').toLowerCase().includes(q)).slice(0,3);
+  let html = '';
+  const section = (title, items, render)=>{ if(!items.length) return ''; return `<div class="sr-group">${title}</div>${items.map(render).join('')}`; };
+  html += section('Clients', clientMatches, c=>`<div class="sr-item" data-open="clients" data-id="${c.id}">${esc(c.fullName)}<small>${esc(c.phone||'')} · ${esc(c.cnic||'')}</small></div>`);
+  html += section('Cases', caseMatches, c=>`<div class="sr-item" data-open="caseDetail" data-id="${c.id}">${esc(c.caseNumber)} — ${esc(c.caseTitle||'')}<small>${esc(c.status)}</small></div>`);
+  html += section('Courts', courtMatches, c=>`<div class="sr-item" data-open="courts" data-id="${c.id}">${esc(c.courtName)}<small>${esc(c.city||'')}</small></div>`);
+  html += section('Documents', docMatches, d=>`<div class="sr-item" data-open="caseDetail" data-id="${d.caseId||''}">${esc(d.title)}<small>${esc(d.category||'')}</small></div>`);
+  box.innerHTML = html || `<div class="sr-item" style="color:var(--text-2)">No matches found for "${esc(q)}"</div>`;
+  box.style.display = 'block';
+  box.querySelectorAll('[data-open]').forEach(el=> el.onclick = ()=>{ box.style.display='none'; document.getElementById('searchInput').value=''; navigateTo(el.dataset.open, el.dataset.id); });
+}
+document.getElementById('searchInput').addEventListener('input', e=> runGlobalSearch(e.target.value));
+document.addEventListener('click', (e)=>{ if(!document.getElementById('globalSearch').contains(e.target)) document.getElementById('searchResults').style.display='none'; });
+
+/* ---------------------------------------------------------------------
+   19. NAVIGATION / ROUTER
+   --------------------------------------------------------------------- */
+const NAV_STRUCTURE = [
+  {group:'Overview', items:[{key:'dashboard', label:'Dashboard', ic:'🏠', perm:'dashboard'}]},
+  {group:'People', items:[{key:'clients', label:'Clients', ic:'👥', perm:'clients'}]},
+  {group:'Case Work', items:[
+    {key:'cases', label:'Cases', ic:'⚖️', perm:'cases'},
+    {key:'hearings', label:'Hearings', ic:'📅', perm:'hearings'},
+    {key:'calendar', label:'Calendar', ic:'📆', perm:'hearings'},
+    {key:'courts', label:'Courts', ic:'🏛️', perm:'courts'},
+    {key:'documents', label:'Documents', ic:'📄', perm:'documents'},
+    {key:'tasks', label:'Tasks', ic:'✅', perm:'tasks'},
+    {key:'importantDates', label:'Important Dates', ic:'🔖', perm:'tasks'},
+  ]},
+  {group:'Finance', items:[
+    {key:'fees', label:'Fees', ic:'💰', perm:'fees'},
+    {key:'payments', label:'Payments', ic:'💳', perm:'fees'},
+    {key:'expenses', label:'Expenses', ic:'🧾', perm:'expenses'},
+    {key:'finance', label:'Finance Dashboard', ic:'📊', perm:'finance'},
+  ]},
+  {group:'Insights', items:[
+    {key:'reports', label:'Reports', ic:'📈', perm:'reports'},
+    {key:'notifications', label:'Notifications', ic:'🔔', perm:'dashboard'},
+  ]},
+  {group:'System', items:[
+    {key:'settings', label:'Settings', ic:'⚙️', perm:'settings'},
+    {key:'backup', label:'Backup & Restore', ic:'💾', perm:'settings'},
+    {key:'audit', label:'Audit Log', ic:'🗂️', perm:'settings'},
+  ]},
+];
+let CURRENT_VIEW = 'dashboard';
+let CURRENT_ID = null;
+
+function buildSidebar(){
+  const nav = document.getElementById('sideNav');
+  nav.innerHTML = NAV_STRUCTURE.map(g=>{
+    const items = g.items.filter(it=>can(it.perm));
+    if(!items.length) return '';
+    return `<div class="nav-group"><div class="nav-label">${g.group}</div>
+      ${items.map(it=>`<div class="nav-item" data-nav="${it.key}"><span class="ic">${it.ic}</span>${it.label}${it.key==='notifications'?'<span class="nav-badge" id="sideNotifBadge" style="display:none;"></span>':''}</div>`).join('')}
+    </div>`;
+  }).join('');
+  nav.querySelectorAll('[data-nav]').forEach(el=> el.onclick = ()=> navigateTo(el.dataset.nav));
+}
+document.addEventListener('click', (e)=>{ const t = e.target.closest('[data-nav]'); if(t && t.tagName!=='DIV' ) {} });
+document.getElementById('content').addEventListener('click', (e)=>{
+  const t = e.target.closest('[data-nav]');
+  if(t && !t.closest('#sideNav')) navigateTo(t.dataset.nav);
+});
+
+function navigateTo(view, id){
+  if(view==='clients' && id) view = 'clientDetail';
+  if(view==='cases' && id) view = 'caseDetail';
+  if(!ENTITY[view] && !['dashboard','cases','caseDetail','clients','clientDetail','hearings','calendar','courts','documents','tasks','importantDates','fees','payments','expenses','finance','reports','notifications','settings','backup','audit'].includes(view)) return;
+  const permKey = document.getElementById('view-'+view)?.dataset.perm;
+  if(permKey && !can(permKey)){ toast('You do not have permission to access this module.','error'); return; }
+  CURRENT_VIEW = view; CURRENT_ID = id || null;
+  location.hash = id? `${view}/${id}` : view;
+  renderRoute();
+}
+function renderRoute(){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const navEl = document.querySelector(`.nav-item[data-nav="${CURRENT_VIEW}"]`) || document.querySelector(`.nav-item[data-nav="${CURRENT_VIEW==='caseDetail'?'cases':(CURRENT_VIEW==='clientDetail'?'clients':CURRENT_VIEW)}"]`);
+  if(navEl) navEl.classList.add('active');
+  const el = document.getElementById('view-'+CURRENT_VIEW);
+  if(el) el.classList.add('active');
+
+  if(CURRENT_VIEW==='dashboard') renderDashboard();
+  else if(CURRENT_VIEW==='clients') renderClientsView();
+  else if(CURRENT_VIEW==='clientDetail') renderClientDetail(CURRENT_ID);
+  else if(CURRENT_VIEW==='cases') renderCasesView();
+  else if(CURRENT_VIEW==='caseDetail') renderCaseDetail(CURRENT_ID);
+  else if(CURRENT_VIEW==='courts') renderListView('courts');
+  else if(CURRENT_VIEW==='hearings') renderHearingsView();
+  else if(CURRENT_VIEW==='calendar') renderCalendarView();
+  else if(CURRENT_VIEW==='documents') renderListView('documents');
+  else if(CURRENT_VIEW==='tasks') renderListView('tasks');
+  else if(CURRENT_VIEW==='importantDates') renderListView('importantDates', {viewId:'importantDates'});
+  else if(CURRENT_VIEW==='fees') renderListView('fees');
+  else if(CURRENT_VIEW==='payments') renderListView('payments');
+  else if(CURRENT_VIEW==='expenses') renderListView('expenses');
+  else if(CURRENT_VIEW==='finance') renderFinanceView();
+  else if(CURRENT_VIEW==='reports') renderReportsView();
+  else if(CURRENT_VIEW==='notifications') renderNotificationsView();
+  else if(CURRENT_VIEW==='settings') renderSettingsView();
+  else if(CURRENT_VIEW==='backup') renderBackupView();
+  else if(CURRENT_VIEW==='audit') renderAuditView();
+  updateNotifBadge();
+  const dot = document.getElementById('sideNotifBadge');
+  if(dot){ const n = computeNotifications().length; dot.style.display = n>0?'inline-block':'none'; dot.textContent = n; }
+  window.scrollTo(0,0);
+}
+function router(){ renderRoute(); }
+
+/* patch clients view for detail open + "clientDetail" alias to "clients" nav highlight */
+
+/* ---------------------------------------------------------------------
+   20. DEMO / SAMPLE DATA SEEDER
+   --------------------------------------------------------------------- */
+async function seedDemoData(){
+  const existing = await dbAll('clients');
+  if(existing.length) return; // don't reseed if data already exists
+
+  const firstNames = ['Ahmed','Bilal','Fatima','Ayesha','Usman','Hassan','Sara','Zainab','Imran','Nadia','Faisal','Mehwish'];
+  const lastNames = ['Khan','Malik','Sheikh','Chaudhry','Butt','Raza','Iqbal','Farooq'];
+  const cities = ['Lahore','Karachi','Islamabad','Faisalabad','Rawalpindi','Multan'];
+  const clients = [];
+  for(let i=0;i<10;i++){
+    const name = `${firstNames[i%firstNames.length]} ${lastNames[(i*3)%lastNames.length]}`;
+    const cl = {id:uid('CL'), clientId:uid('CL'), fullName:name, guardianName:`S/O ${lastNames[(i+2)%lastNames.length]}`,
+      cnic:`35202-${1000000+i*37}-${i%9+1}`, phone:`0300-${1000000+i*111}`, whatsapp:`0300-${1000000+i*111}`, email:`${name.split(' ')[0].toLowerCase()}${i}@example.com`,
+      address:`House ${i+12}, Street ${i+3}, ${cities[i%cities.length]}`, city:cities[i%cities.length], occupation: i%3===0?'Businessman':(i%3===1?'Government Employee':'Private Employee'),
+      clientType: i%5===0?'Company':'Individual', status: i===9?'Inactive':'Active', registrationDate: recentDate(200-i*8), notes:'Sample/demo client for evaluation purposes.', createdAt:nowIso()};
+    clients.push(cl); await dbPut('clients', cl);
+  }
+  const courts = [
+    {id:uid('CRT'), courtName:'Lahore High Court', courtType:'High Court', city:'Lahore', district:'Lahore', judge:'Justice M. Tariq', courtNumber:'Court No. 4', address:'Fane Road, Lahore', notes:'', createdAt:nowIso()},
+    {id:uid('CRT'), courtName:'District Court Lahore', courtType:'District Court', city:'Lahore', district:'Lahore', judge:'Judge S. Ahmed', courtNumber:'Court No. 12', address:'Multan Road, Lahore', notes:'', createdAt:nowIso()},
+    {id:uid('CRT'), courtName:'Sessions Court Karachi', courtType:'Sessions Court', city:'Karachi', district:'Karachi Central', judge:'Judge R. Baig', courtNumber:'Court No. 7', address:'I.I. Chundrigar Road', notes:'', createdAt:nowIso()},
+    {id:uid('CRT'), courtName:'Family Court Islamabad', courtType:'Family Court', city:'Islamabad', district:'Islamabad', judge:'Judge N. Chaudhry', courtNumber:'Court No. 2', address:'G-11, Islamabad', notes:'', createdAt:nowIso()},
+    {id:uid('CRT'), courtName:'Banking Court Lahore', courtType:'Banking Court', city:'Lahore', district:'Lahore', judge:'Judge A. Siddiqui', courtNumber:'Court No. 1', address:'Egerton Road, Lahore', notes:'', createdAt:nowIso()},
+  ];
+  for(const c of courts) await dbPut('courts', c);
+
+  const caseTypes = OPT.caseType, statuses = ['Active','Pending','Under Trial','New','Won','Lost','Closed','Decision Pending'];
+  const lawyers = ['Barrister Ahmed Raza','Advocate Bilal Assistant'];
+  const cases = [];
+  for(let i=0;i<15;i++){
+    const client = clients[i%clients.length];
+    const court = courts[i%courts.length];
+    const cs = {id:uid('CASE'), caseNumber:`CN-${2026}-${String(100+i)}`, caseTitle:`${client.fullName} vs. ${lastNames[(i+1)%lastNames.length]} ${firstNames[(i+4)%firstNames.length]}`,
+      clientId:client.id, caseType:caseTypes[i%caseTypes.length], court:court.courtName, courtLocation:court.city, judge:court.judge,
+      opposingParty:`${firstNames[(i+5)%firstNames.length]} ${lastNames[(i+6)%lastNames.length]}`, opposingLawyer:`Advocate ${lastNames[(i+2)%lastNames.length]}`,
+      filingDate:recentDate(180-i*6), registrationDate:recentDate(178-i*6), nextHearingDate: futureDate((i%10)-2),
+      status:statuses[i%statuses.length], priority:['Low','Normal','High','Urgent'][i%4], lawyerAssigned:lawyers[i%2],
+      description:'Sample case created for demonstration purposes covering typical civil/criminal litigation workflow.', remarks:'', createdAt:nowIso()};
+    cases.push(cs); await dbPut('cases', cs);
+  }
+  // hearings
+  for(let i=0;i<28;i++){
+    const cs = cases[i%cases.length];
+    const hd = i<10 ? futureDate(i-3) : recentDate(i*5);
+    await dbPut('hearings', {id:uid('HRG'), caseId:cs.id, hearingDate:hd, hearingTime:['09:30','10:00','11:15','14:00'][i%4], court:cs.court, judge:cs.judge,
+      hearingType:OPT.hearingType[i%OPT.hearingType.length], purpose:'Routine hearing', status: hd<todayStr()? 'Completed':'Scheduled',
+      result: hd<todayStr()? 'Arguments heard, adjourned to next date.':'', nextDate: hd<todayStr()? futureDate(i%14):'', notes:'', createdAt:nowIso()});
+  }
+  // tasks
+  const taskTitles = ['Prepare written statement','File rejoinder','Collect evidence documents','Draft appeal','Client follow-up call','Prepare cross-examination questions','Submit court fee challan','Review case file'];
+  for(let i=0;i<12;i++){
+    const cs = cases[i%cases.length];
+    await dbPut('tasks', {id:uid('TSK'), title:taskTitles[i%taskTitles.length], caseId:cs.id, clientId:cs.clientId, assignedTo:lawyers[i%2],
+      dueDate: i%4===0? recentDate(3+i) : futureDate(i), priority:['Low','Normal','High','Urgent'][i%4], status:['Pending','In Progress','Completed'][i%3], notes:'', createdAt:nowIso()});
+  }
+  // important dates
+  for(let i=0;i<6;i++){
+    await dbPut('importantDates', {id:uid('DT'), title:`${OPT.dateType[i%OPT.dateType.length]} — ${cases[i].caseNumber}`, type:OPT.dateType[i%OPT.dateType.length], date:futureDate(i*3+1), caseId:cases[i].id, notes:'', createdAt:nowIso()});
+  }
+  // fees + payments
+  for(let i=0;i<15;i++){
+    const cs = cases[i]; const amt = 20000 + (i%6)*15000;
+    const recvd = i%3===0? amt : (i%3===1? Math.round(amt*0.5) : 0);
+    await dbPut('fees', {id:uid('FEE'), clientId:cs.clientId, caseId:cs.id, feeType:OPT.feeType[i%OPT.feeType.length], amount:amt, receivedAmount:recvd,
+      dueDate:futureDate(i), paymentStatus: recvd>=amt?'Paid':(recvd>0?'Partial':'Unpaid'), notes:'', createdAt:nowIso()});
+    if(recvd>0){
+      await dbPut('payments', {id:uid('PAY'), clientId:cs.clientId, caseId:cs.id, date:recentDate(i*4), amount:recvd, method:OPT.paymentMethod[i%OPT.paymentMethod.length], reference:`RCPT-${1000+i}`, receivedBy:lawyers[i%2], notes:'', createdAt:nowIso()});
+    }
+  }
+  // expenses
+  for(let i=0;i<14;i++){
+    const cs = cases[i%cases.length];
+    await dbPut('expenses', {id:uid('EXP'), date:recentDate(i*5), category:OPT.expenseCategory[i%OPT.expenseCategory.length], amount:500+(i%8)*350, caseId:cs.id, clientId:cs.clientId, paidBy:lawyers[i%2], description:'Sample expense entry.', createdAt:nowIso()});
+  }
+  // documents
+  const docCats = OPT.docCategory;
+  for(let i=0;i<10;i++){
+    const cs = cases[i%cases.length];
+    await dbPut('documents', {id:uid('DOC'), title:`${docCats[i%docCats.length]} — ${cs.caseNumber}`, category:docCats[i%docCats.length], caseId:cs.id, clientId:cs.clientId, filePath:`/case-files/${cs.caseNumber}/doc-${i+1}.pdf`, uploadDate:recentDate(i*7), notes:'', createdAt:nowIso()});
+  }
+  // opposite parties
+  for(let i=0;i<8;i++){
+    const cs = cases[i];
+    await dbPut('caseParties', {id:uid('OP'), caseId:cs.id, name:cs.opposingParty, guardianName:'', cnic:'', phone:'', lawyer:cs.opposingLawyer, address:'', notes:'', createdAt:nowIso()});
+  }
+  await logAudit('Demo Data Seeded','System','Sample dataset generated');
+}
+function recentDate(daysAgo){ return new Date(Date.now()-daysAgo*86400000).toISOString().slice(0,10); }
+function futureDate(daysAhead){ return new Date(Date.now()+daysAhead*86400000).toISOString().slice(0,10); }
+
+async function clearDemoData(){
+  const ok = await confirmDialog('Clear Demo Data?', 'This will permanently delete ALL data in the system (demo and any real data you have entered). This cannot be undone.', {okText:'Clear Everything'});
+  if(!ok) return;
+  for(const s of STORES){ if(s!=='users' && s!=='settings') await dbClearStore(s); }
+  await refreshCache();
+  toast('Demo data cleared.','success');
+  navigateTo('dashboard');
+}
+
+/* ---------------------------------------------------------------------
+   21. TOPBAR: theme, notifications, user menu, logout
+   --------------------------------------------------------------------- */
+document.getElementById('themeToggle').addEventListener('click', async ()=>{
+  document.body.classList.toggle('dark');
+  document.getElementById('themeToggle').textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+  const s = await getSettings(); s.darkMode = document.body.classList.contains('dark'); await dbPut('settings', s);
+});
+document.getElementById('notifBtn').addEventListener('click', ()=> navigateTo('notifications'));
+document.getElementById('userMenuBtn').addEventListener('click', async ()=>{
+  const ok = await confirmDialog('Log Out?', `Sign out of LexOffice as ${SESSION.fullName}?`, {okText:'Log Out', okClass:'btn-primary', icon:'🚪'});
+  if(ok) logout();
+});
+
+/* ---------------------------------------------------------------------
+   22. LOGIN SCREEN HANDLERS
+   --------------------------------------------------------------------- */
+document.getElementById('loginBtn').addEventListener('click', doLogin);
+document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('loginUser').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+async function doLogin(){
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const remember = document.getElementById('rememberMe').checked;
+  const errBox = document.getElementById('loginError');
+  errBox.style.display = 'none';
+  if(!u || !p){ errBox.textContent = 'Please enter both username and password.'; errBox.style.display='block'; return; }
+  const result = await login(u, p);
+  if(!result){ errBox.textContent = 'Invalid username or password.'; errBox.style.display='block'; return; }
+  if(result==='disabled'){ errBox.textContent = 'This account has been disabled. Contact your administrator.'; errBox.style.display='block'; return; }
+  setSession(result, remember);
+  await logAudit('User Login', 'Session', result.username);
+  await startApp();
+}
+
+/* ---------------------------------------------------------------------
+   23. APP BOOTSTRAP
+   --------------------------------------------------------------------- */
+async function startApp(){
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').classList.add('active');
+  document.getElementById('tbAvatar').textContent = initials(SESSION.fullName);
+  document.getElementById('tbName').textContent = SESSION.fullName;
+  document.getElementById('tbRole').textContent = SESSION.role.charAt(0).toUpperCase()+SESSION.role.slice(1);
+  await refreshCache();
+  const s = await getSettings();
+  if(s.darkMode){ document.body.classList.add('dark'); document.getElementById('themeToggle').textContent='☀️'; }
+  buildSidebar();
+  const hashRoute = location.hash.replace('#','').split('/');
+  CURRENT_VIEW = (hashRoute[0] && (ENTITY[hashRoute[0]] || ['dashboard','cases','caseDetail','clients','clientDetail','hearings','calendar','courts','documents','tasks','importantDates','fees','payments','expenses','finance','reports','notifications','settings','backup','audit'].includes(hashRoute[0]))) ? hashRoute[0] : 'dashboard';
+  CURRENT_ID = hashRoute[1] || null;
+  if(!can(document.getElementById('view-'+CURRENT_VIEW)?.dataset.perm)) CURRENT_VIEW = 'dashboard';
+  renderRoute();
+  await logAudit('Session Started', 'System', SESSION.username);
+}
+
+window.addEventListener('hashchange', ()=>{
+  if(!SESSION) return;
+  const hashRoute = location.hash.replace('#','').split('/');
+  if(hashRoute[0]){ CURRENT_VIEW = hashRoute[0]; CURRENT_ID = hashRoute[1]||null; renderRoute(); }
+});
+
+async function init(){
+  await openDatabase();
+  // Default users + the sample demo dataset are now seeded once by the
+  // backend itself on first startup (see backend/db.js + backend/seed.js),
+  // since seeding here would need a login token that doesn't exist yet.
+  if(loadSession()){
+    await startApp();
+  }
+}
+init();
+</script>
+</body>
+</html>

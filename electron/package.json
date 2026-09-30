@@ -1,0 +1,32 @@
+{
+  "name": "lexoffice-desktop",
+  "version": "1.0.0",
+  "description": "LexOffice — Law Firm Management System (Desktop App)",
+  "main": "main.js",
+  "author": "LexOffice",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3",
+    "electron-rebuild": "^3.2.9"
+  },
+  "build": {
+    "appId": "com.lexoffice.desktop",
+    "productName": "LexOffice",
+    "directories": { "output": "dist" },
+    "files": [
+      "main.js"
+    ],
+    "extraResources": [
+      { "from": "../backend", "to": "backend", "filter": ["**/*", "!data/**"] },
+      { "from": "../frontend", "to": "frontend" }
+    ],
+    "win": { "target": "nsis" },
+    "mac": { "target": "dmg", "category": "public.app-category.business" },
+    "linux": { "target": "AppImage", "category": "Office" }
+  }
+}

@@ -1,0 +1,25 @@
+# ── Dependencies ───────────────────────────────────────
+node_modules/
+
+# ── Secrets / environment ──────────────────────────────
+.env
+*.env.local
+
+# ── Runtime database (auto-created + seeded on first run) ─
+data/*.db
+backend/data/*.db
+backend/data/*.db-journal
+backend/data/*.db-wal
+backend/data/*.db-shm
+
+# ── Electron build output (large installers) ───────────
+electron/dist/
+dist/
+build/
+
+# ── OS / editor ────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/
